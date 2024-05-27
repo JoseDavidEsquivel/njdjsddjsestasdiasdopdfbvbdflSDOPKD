@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, status, File, UploadFile, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from pydantic import BaseModel
 from datetime import date, time
@@ -99,6 +100,11 @@ class Respuesta_abierta(BaseModel):
     id_pregunta:int
     id_encuesta: int
     respuesta: str
+
+class Editar_respuesta_abierta(BaseModel):
+    respuesta: str
+
+app.mount("/static", StaticFiles(directory="static"),name="static")
 
 # funciones extra
 def generar_contrasena_salt (contrasena):
@@ -1279,7 +1285,7 @@ def listar_bot():
             
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No hay asuntos con el bot en la Base de datos")
+            raise HTTPException(status_code=404, detail="No hay problemas con el bot en la Base de datos")
     finally:
         cursor.close()
         connection.close()
@@ -1307,7 +1313,7 @@ def detalle_bot(id_bot:int):
 
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No existe ese asunto con el bot en la Base de datos")
+            raise HTTPException(status_code=404, detail="No existe ese problema con el bot en la Base de datos")
     finally:
         cursor.close()
         connection.close()
@@ -1330,8 +1336,8 @@ def crear_bot(bot: Bot):
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
-        print(f"Error al insertar un asunto con el bot en la base de datos: {err}")
-        raise HTTPException(status_code=500, detail="Error interno al crear asunto con el bot")
+        print(f"Error al insertar un problema con el bot en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear un problema con el bot")
     finally:
         cursor.close()
         connection.close()
@@ -1354,8 +1360,8 @@ def editar_bot(bot: Bot, id_bot:int):
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
-        print(f"Error al actualizar evento en la base de datos: {err}")
-        raise HTTPException(status_code=500, detail="Error interno al actualizar asunto con el bot")
+        print(f"Error al actualizar problema con el bot en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar problema con el bot")
     finally:
         cursor.close()
         connection.close()
@@ -1761,14 +1767,8 @@ def borrar_opcion(id_opcion: int):
 
     return JSONResponse(content={"message": "Aviso borrado correctamente", "id_pregunta": id_opcion})
 
-
-
-
-
-
-# 
 @app.get("/respuesta_abierta",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las respuestas abiertas dadas existentes", tags=['Respuestas_abiertas'])
-def listar_preguntas_abiertas():
+def listar_respuestas_abiertas():
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
@@ -1779,10 +1779,9 @@ def listar_preguntas_abiertas():
             for row in datos:
                 dato = {
                     'id_respuesta_abierta':row[0],
-                    'id_opcion':row[1],
-                    'id_pregunta': row[2],
-                    'id_encuesta': row[3],
-                    'respuesta': row[4]
+                    'id_pregunta': row[1],
+                    'id_encuesta': row[2],
+                    'respuesta': row[3]
                 }
                 respuesta.append(dato)
             
@@ -1792,7 +1791,6 @@ def listar_preguntas_abiertas():
     finally:
         cursor.close()
         connection.close()
-
 
 @app.get("/respuesta_abierta/{id_respuesta_abierta}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar una respuesta abierta en la bd", tags=['Respuestas_abiertas'])
 def detalle_respuesta_abierta(id_respuesta_abierta:int):
@@ -1807,10 +1805,9 @@ def detalle_respuesta_abierta(id_respuesta_abierta:int):
             for row in datos:
                 dato = {
                     'id_respuesta_abierta':row[0],
-                    'id_opcion':row[1],
-                    'id_pregunta': row[2],
-                    'id_encuesta': row[3],
-                    'respuesta': row[4]
+                    'id_pregunta': row[1],
+                    'id_encuesta': row[2],
+                    'respuesta': row[3]
                 }
                 respuesta.append(dato)
 
@@ -1821,7 +1818,7 @@ def detalle_respuesta_abierta(id_respuesta_abierta:int):
         cursor.close()
         connection.close()
 
-@app.post("/respuesta_abierta/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una respuesta abierta", tags=['Opciones'])
+@app.post("/respuesta_abierta/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una respuesta abierta", tags=['Respuestas_abiertas'])
 def crear_respuesta_abierta(respuesta:Respuesta_abierta):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
@@ -1852,7 +1849,7 @@ def crear_respuesta_abierta(respuesta:Respuesta_abierta):
         return {
             'id_pregunta': respuesta.id_pregunta,
             'id_encuesta': respuesta.id_encuesta,
-            'opcion': respuesta.respuesta
+            'respuesta': respuesta.respuesta
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
@@ -1862,42 +1859,174 @@ def crear_respuesta_abierta(respuesta:Respuesta_abierta):
         cursor.close()
         connection.close()
 
-# @app.put("/opcion/editar/{id_opcion}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una opcion", tags=['Opciones'])
-# def editar_opcion(opcion:EditarOpcion, id_opcion: int):
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
-#     try:
-#         # Actualizar pregunta en la base de datos
-#         query = "UPDATE opcion SET opcion = %s WHERE id_opcion = %s"
-#         evento_data = (opcion, id_opcion)
-#         cursor.execute(query, evento_data)
-#         connection.commit()
-#         return {
-#             'opcion': opcion.opcion
-#         }
-#     except mysql.connector.Error as err:
-#         # Manejar errores de la base de datos
-#         print(f"Error al actualizar la opcion en la base de datos: {err}")
-#         raise HTTPException(status_code=500, detail="Error interno al actualizar opcion")
-#     finally:
-#         cursor.close()
-#         connection.close()
+@app.put("/respuesta_abierta/editar/{id_pregunta_abierta}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una respuesta_abierta", tags=['Respuestas_abiertas'])
+def editar_respuesta_abierta(respuesta:Editar_respuesta_abierta, id_pregunta_abierta: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE respuesta_abierta SET respuesta = %s WHERE id_respuesta_abierta = %s"
+        evento_data = (respuesta.respuesta, id_pregunta_abierta)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'nueva respuesta': respuesta.respuesta
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar la respuesta en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar la respuesta")
+    finally:
+        cursor.close()
+        connection.close()
 
-# @app.delete("/opcion/borrar/{id_opcion}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una opcion", tags=['Opciones'])
-# def borrar_opcion(id_opcion: int):
-#     # Conectar a la base de datos
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
+@app.delete("/respuesta_abierta/borrar/{id_respuesta_abierta}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una respuesta abierta", tags=['Respuestas_abiertas'])
+def borrar_respuesta_abierta(id_respuesta_abierta: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
 
-#     # Verificar si el aviso existe y obtener la información del archivo
-#     cursor.execute("SELECT * FROM opcion WHERE id_opcion =%s", (id_opcion,))
-#     aviso = cursor.fetchone()
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM respuesta_abierta WHERE id_respuesta_abierta =%s", (id_respuesta_abierta,))
+    aviso = cursor.fetchone()
     
-#     if not aviso:
-#         raise HTTPException(status_code=404, detail="Ubicacion no encontrada")
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Respuesta no encontrada")
 
-#     # Eliminar el aviso de la base de datos
-#     cursor.execute("DELETE FROM opcion WHERE id_opcion =%s", (id_opcion,))
-#     connection.commit()
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM respuesta_abierta WHERE id_respuesta_abierta =%s", (id_respuesta_abierta,))
+    connection.commit()
 
-#     return JSONResponse(content={"message": "Aviso borrado correctamente", "id_pregunta": id_opcion})
+    return JSONResponse(content={"message": "Respuesta borrada correctamente", "id_respuesta_abierta": id_respuesta_abierta})
+
+@app.get("/respuesta_cerrada",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las respuestas cerradas existentes", tags=['Respuestas_abiertas'])
+def listar_respuestas_cerradas():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM respuesta_cerrada")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_respuesta':row[0],
+                    'id_opcion':row[1],
+                    'id_pregunta': row[2],
+                    'id_encuesta': row[3]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay respuestas cerradas en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/respuesta_abierta/{id_respuesta_abierta}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar una respuesta abierta en la bd", tags=['Respuestas_abiertas'])
+def detalle_respuesta_abierta(id_respuesta_abierta:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM respuesta_abierta WHERE id_respuesta_abierta = %s"
+        cursor.execute(query, (id_respuesta_abierta,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_respuesta':row[0],
+                    'id_opcion':row[1],
+                    'id_pregunta': row[2],
+                    'id_encuesta': row[3]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe una respuesta abierta con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/respuesta_abierta/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una respuesta abierta", tags=['Respuestas_abiertas'])
+def crear_respuesta_abierta(respuesta:Respuesta_abierta):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Verificar si el id_encuesta existe en la tabla encuestas
+        query_check_encuesta = "SELECT 1 FROM encuestas WHERE id_encuesta = %s"
+        cursor.execute(query_check_encuesta, (respuesta.id_encuesta,))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="La encuesta no existe")
+        
+        # Verificar si el id_pregunta existe en la tabla encuestas
+        query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s"
+        cursor.execute(query_check_pregunta_1, (respuesta.id_pregunta,))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="La pregunta no existe")
+        
+        # Verificar si el id_pregunta existe en la tabla encuestas
+        query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s AND pregunta_abierta = %s"
+        cursor.execute(query_check_pregunta_1, (respuesta.id_pregunta,1))
+        if cursor.fetchone() is not None:
+            raise HTTPException(status_code=404, detail="La pregunta es cerrada, no deberias poner opciones ahi")
+
+        # Insertar nuevo evento en la base de datos
+        query = "INSERT INTO respuesta_abierta (id_pregunta, id_encuesta, respuesta) VALUES (%s,%s,%s)"
+        evento_data = (respuesta.id_pregunta, respuesta.id_encuesta, respuesta.respuesta)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_pregunta': respuesta.id_pregunta,
+            'id_encuesta': respuesta.id_encuesta,
+            'respuesta': respuesta.respuesta
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar pregunta en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear una opcion")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.put("/respuesta_abierta/editar/{id_pregunta_abierta}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una respuesta_abierta", tags=['Respuestas_abiertas'])
+def editar_respuesta_abierta(respuesta:Editar_respuesta_abierta, id_pregunta_abierta: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE respuesta_abierta SET respuesta = %s WHERE id_respuesta_abierta = %s"
+        evento_data = (respuesta.respuesta, id_pregunta_abierta)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'nueva respuesta': respuesta.respuesta
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar la respuesta en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar la respuesta")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/respuesta_abierta/borrar/{id_respuesta_abierta}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una respuesta abierta", tags=['Respuestas_abiertas'])
+def borrar_respuesta_abierta(id_respuesta_abierta: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM respuesta_abierta WHERE id_respuesta_abierta =%s", (id_respuesta_abierta,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Respuesta no encontrada")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM respuesta_abierta WHERE id_respuesta_abierta =%s", (id_respuesta_abierta,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Respuesta borrada correctamente", "id_respuesta_abierta": id_respuesta_abierta})
