@@ -7,6 +7,7 @@ CREATE TABLE usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL UNIQUE,
     contrasena VARCHAR(255) NOT NULL,
+    area VARCHAR(70) NOT NULL,
     estado ENUM('0', '1') DEFAULT '1',
     permisos ENUM('0', '1') DEFAULT '0',
     salt VARCHAR(255) NOT NULL
@@ -19,11 +20,17 @@ CREATE TABLE logo (
     ruta VARCHAR(255) NOT NULL
 );
 
+INSERT INTO logo (imagen,ruta) VALUES
+('default_icon.png','static/images/logo/');
+
 CREATE TABLE header (
     id_header INT AUTO_INCREMENT PRIMARY KEY,
     imagen VARCHAR(255) NOT NULL,
     ruta VARCHAR(255) NOT NULL
 );
+
+INSERT INTO header (imagen,ruta) VALUES
+('default_header.png','static/images/header/');
 
 CREATE TABLE carrusel (
     id_imagen INT AUTO_INCREMENT PRIMARY KEY,
@@ -144,11 +151,18 @@ CREATE TABLE bot (
 CREATE TABLE docs_ley_general (
     id_documento INT AUTO_INCREMENT PRIMARY KEY,
     articulo ENUM('69','70'),
-    fraccion INT,
-    sub_fraccion VARCHAR(255),
-    desc_fraccion VARCHAR(255),
+    fraccion VARCHAR(100),
     año INT,
-    tipo_resumen ENUM('Anual', 'Trimestral'),
     trimestre ENUM('1', '2', '3', '4'),
     ruta_archivo VARCHAR(50)
 );
+
+
+
+-- Falta corregir tabla
+-- usuarios (area asignada)(administrador si es para el admin)
+-- probar si la logica de los docs funciona
+-- probar si la logica de las encuestas funciona
+-- hacer una nueva tabla para colores de la pagina 
+-- hacer nueva pagina para banco de respuestas
+-- modificar noticias para la ruta de las imagenes 

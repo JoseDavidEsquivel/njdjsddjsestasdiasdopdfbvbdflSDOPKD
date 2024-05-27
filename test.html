@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estilo Personalizado de Lista de Selección</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+    <style>
+        .choices__item--selectable.is-highlighted {
+            background-color: #9b5151; /* Cambia el color de fondo cuando está seleccionado */
+            color: #07ec94; /* Cambia el color del texto cuando está seleccionado */
+        }
+    </style>
+</head>
+<body>
+    <form>
+        <label for="opciones">Elige una opción:</label>
+        <select id="opciones" name="opciones">
+            <option value="opcion1">Opción 1</option>
+            <option value="opcion2">Opción 2</option>
+            <option value="opcion3">Opción 3</option>
+        </select>
+    </form>
+
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script>
+        const element = document.getElementById('opciones');
+        const choices = new Choices(element, {
+            searchEnabled: false, // Desactiva la barra de búsqueda si no es necesaria
+        });
+    </script>
+</body>
+</html>
