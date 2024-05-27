@@ -103,7 +103,7 @@ CREATE TABLE opcion (
 -- RESPUESTAS --
 
 -- RESPUESTAS MULTIPLES --
-CREATE TABLE respuesta_multiple_uno (
+CREATE TABLE respuesta_cerrada (
     id_respuesta INT AUTO_INCREMENT PRIMARY KEY,
     id_opcion INT,
     id_pregunta INT,
@@ -113,21 +113,20 @@ CREATE TABLE respuesta_multiple_uno (
     FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
 );
 
--- RESPUESTAS SELECCION MULTIPLE -- 
-CREATE TABLE respuesta_multiple_varios (
-    id_respuesta INT AUTO_INCREMENT PRIMARY KEY,
-    id_opcion INT,
-    id_pregunta INT,
-    id_encuesta INT,
-    FOREIGN KEY (id_opcion) REFERENCES opcion(id_opcion),
-    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta),
-    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
-);
+-- -- RESPUESTAS SELECCION MULTIPLE -- 
+-- CREATE TABLE respuesta_multiple_varios (
+--     id_respuesta INT AUTO_INCREMENT PRIMARY KEY,
+--     id_opcion INT,
+--     id_pregunta INT,
+--     id_encuesta INT,
+--     FOREIGN KEY (id_opcion) REFERENCES opcion(id_opcion),
+--     FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta),
+--     FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
+-- );
 
 -- RESPUESTAS ABIERTAS --
 CREATE TABLE respuesta_abierta (
     id_respuesta_abierta INT AUTO_INCREMENT PRIMARY KEY,
-    id_opcion INT,
     id_pregunta INT,
     id_encuesta INT,
     respuesta VARCHAR(200),
@@ -136,14 +135,13 @@ CREATE TABLE respuesta_abierta (
     FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
 );
 
-
-
 -- CHATBOT -------------------------------------------------------------------
 CREATE TABLE bot (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre TEXT,
     correo TEXT,
-    actividad TEXT
+    problema TEXT,
+    area TEXT
 );
 
 

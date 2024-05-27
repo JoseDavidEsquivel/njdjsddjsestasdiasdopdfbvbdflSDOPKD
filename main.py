@@ -71,7 +71,8 @@ class Evento(BaseModel):
 class Bot(BaseModel):
     nombre: str
     correo: str
-    actividad: str
+    problema: str
+    area: str
 
 class Encuestas(BaseModel):
     titulo: str
@@ -93,7 +94,7 @@ class Opciones(BaseModel):
 class EditarOpcion(BaseModel):
     opcion: str
 
-class Pregunta_abierta(BaseModel):
+class Respuesta_abierta(BaseModel):
     id_opcion: int
     id_pregunta:int
     id_encuesta: int
@@ -121,7 +122,7 @@ def verificar_credenciales(nombre: str, contrasena: str) -> bool:
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
-        query = "SELECT contrasena, salt FROM usuarios WHERE nombre = %s;"
+        query = "SELECT contrasena, salt, permisos FROM usuarios WHERE nombre = %s;"
         cursor.execute(query, (nombre,))
         usuario = cursor.fetchone()
 
@@ -136,7 +137,14 @@ def verificar_credenciales(nombre: str, contrasena: str) -> bool:
             contrasena_hashed = base64.b64encode(sha256_hash).decode('utf-8')
             # Comparar las contraseñas hasheadas
             if contrasena_hashed == contrasena_db:
-                return True
+                nivel_permiso = usuario[2]
+                if nivel_permiso == 1:
+                    rol = 'administrador'
+                else:
+                    rol = 'director'
+                return {'Sesion':True,
+                        'Permiso':rol
+                        }
             else:
                 return False
         else:
@@ -1250,8 +1258,8 @@ def borrar_evento(id_evento: int):
 
     return JSONResponse(content={"message": "Aviso borrado correctamente", "aviso_id": id_evento})
 
-@app.get("/asunto",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los contactos existentes", tags=['ChatBot'])
-def listar_asuntos():
+@app.get("/bot",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los contactos existentes", tags=['ChatBot'])
+def listar_bot():
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
@@ -1264,7 +1272,8 @@ def listar_asuntos():
                     'id': row[0],
                     'nombre': row[1],
                     'correo':row[2],
-                    'actividad':row[3]
+                    'problema':row[3],
+                    'area':row[4]
                 }
                 respuesta.append(dato)
             
@@ -1275,13 +1284,13 @@ def listar_asuntos():
         cursor.close()
         connection.close()
 
-@app.get("/asunto/{id_asunto}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar un asunto con el Bot en la bd", tags=['ChatBot'])
-def detalle_asunto(id_asunto:int):
+@app.get("/bot/{id_bot}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar un asunto con el Bot en la bd", tags=['ChatBot'])
+def detalle_bot(id_bot:int):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
         query = "SELECT * FROM bot WHERE id = %s"
-        cursor.execute(query, (id_asunto,))
+        cursor.execute(query, (id_bot,))
         datos = cursor.fetchall()
         if datos:
             respuesta = []
@@ -1290,7 +1299,8 @@ def detalle_asunto(id_asunto:int):
                     'id': row[0],
                     'nombre': row[1],
                     'correo':row[2],
-                    'actividad':row[3]
+                    'problema':row[3],
+                    'area':row[4]
                 }
                 respuesta.append(dato)
             
@@ -1302,70 +1312,72 @@ def detalle_asunto(id_asunto:int):
         cursor.close()
         connection.close()
 
-@app.post("/asunto/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un asunto", tags=['ChatBot'])
-def crear_asunto(bot: Bot):
+@app.post("/bot/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un asunto", tags=['ChatBot'])
+def crear_bot(bot: Bot):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
         # Insertar nuevo evento en la base de datos
-        query = "INSERT INTO bot (nombre, correo, actividad) VALUES (%s, %s, %s)"
-        evento_data = (bot.nombre, bot.correo, bot.actividad)
+        query = "INSERT INTO bot (nombre, correo, problema,area) VALUES (%s, %s, %s, %s)"
+        evento_data = (bot.nombre, bot.correo, bot.problema, bot.area)
         cursor.execute(query, evento_data)
         connection.commit()
         return {
             'nombre': bot.nombre,
             'correo': bot.correo,
-            'actividad': bot.actividad
+            'problema': bot.problema,
+            'area': bot.area
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
-        print(f"Error al insertar evento en la base de datos: {err}")
+        print(f"Error al insertar un asunto con el bot en la base de datos: {err}")
         raise HTTPException(status_code=500, detail="Error interno al crear asunto con el bot")
     finally:
         cursor.close()
         connection.close()
 
-@app.put("/asunto/editar/{id_asunto}",status_code=status.HTTP_200_OK, summary="Endpoint para editar un evento", tags=['ChatBot'])
-def editar_asunto(bot: Bot, id_asunto:int):
+@app.put("/bot/editar/{id_bot}",status_code=status.HTTP_200_OK, summary="Endpoint para editar un asunto con el bot en la base de datos", tags=['ChatBot'])
+def editar_bot(bot: Bot, id_bot:int):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
         # Insertar nuevo usuario en la base de datos
-        query = "UPDATE bot SET nombre = %s, correo= %s, actividad= %s WHERE id = %s"
-        evento_data = (bot.nombre,bot.correo,bot.actividad, id_asunto)
+        query = "UPDATE bot SET nombre = %s, correo= %s, problema= %s, area = %s WHERE id = %s"
+        evento_data = (bot.nombre,bot.correo,bot.problema,bot.area, id_bot)
         cursor.execute(query, evento_data)
         connection.commit()
         return {
             'nombre': bot.nombre,
             'correo': bot.correo,
-            'actividad': bot.actividad
+            'problema': bot.problema,
+            'area':bot.area
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
         print(f"Error al actualizar evento en la base de datos: {err}")
-        raise HTTPException(status_code=500, detail="Error interno al actualizar evento")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar asunto con el bot")
     finally:
         cursor.close()
         connection.close()
 
-@app.delete("/asunto/editar/{id_asunto}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un contacto", tags=['ChatBot'])
-def borrar_asunto(id_asunto: int):
+@app.delete("/bot/editar/{id_bot}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un contacto", tags=['ChatBot'])
+def borrar_bot(id_bot: int):
     # Conectar a la base de datos
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
 
     # Verificar si el aviso existe y obtener la información del archivo
-    cursor.execute("SELECT * FROM bot WHERE id=%s", (id_asunto,))
+    cursor.execute("SELECT * FROM bot WHERE id=%s", (id_bot,))
     aviso = cursor.fetchone()
     
     if not aviso:
         raise HTTPException(status_code=404, detail="Ubicacion no encontrada")
 
     # Eliminar el aviso de la base de datos
-    cursor.execute("DELETE FROM bot WHERE id =%s", (id_asunto,))
+    cursor.execute("DELETE FROM bot WHERE id =%s", (id_bot,))
     connection.commit()
 
-    return JSONResponse(content={"message": "Aviso borrado correctamente", "aviso_id": id_asunto})
+    return JSONResponse(content={"message": "Aviso borrado correctamente", "aviso_id": id_bot})
 
 @app.get("/encuesta",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las encuestas existentes", tags=['Encuestas'])
 def listar_encuestas():
@@ -1749,3 +1761,143 @@ def borrar_opcion(id_opcion: int):
 
     return JSONResponse(content={"message": "Aviso borrado correctamente", "id_pregunta": id_opcion})
 
+
+
+
+
+
+# 
+@app.get("/respuesta_abierta",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las respuestas abiertas dadas existentes", tags=['Respuestas_abiertas'])
+def listar_preguntas_abiertas():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM respuesta_abierta")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_respuesta_abierta':row[0],
+                    'id_opcion':row[1],
+                    'id_pregunta': row[2],
+                    'id_encuesta': row[3],
+                    'respuesta': row[4]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay respuestas abiertas en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@app.get("/respuesta_abierta/{id_respuesta_abierta}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar una respuesta abierta en la bd", tags=['Respuestas_abiertas'])
+def detalle_respuesta_abierta(id_respuesta_abierta:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM respuesta_abierta WHERE id_respuesta_abierta = %s"
+        cursor.execute(query, (id_respuesta_abierta,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_respuesta_abierta':row[0],
+                    'id_opcion':row[1],
+                    'id_pregunta': row[2],
+                    'id_encuesta': row[3],
+                    'respuesta': row[4]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe una respuesta abierta con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/respuesta_abierta/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una respuesta abierta", tags=['Opciones'])
+def crear_respuesta_abierta(respuesta:Respuesta_abierta):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Verificar si el id_encuesta existe en la tabla encuestas
+        query_check_encuesta = "SELECT 1 FROM encuestas WHERE id_encuesta = %s"
+        cursor.execute(query_check_encuesta, (respuesta.id_encuesta,))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="La encuesta no existe")
+        
+        # Verificar si el id_pregunta existe en la tabla encuestas
+        query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s"
+        cursor.execute(query_check_pregunta_1, (respuesta.id_pregunta,))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="La pregunta no existe")
+        
+        # Verificar si el id_pregunta existe en la tabla encuestas
+        query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s AND pregunta_abierta = %s"
+        cursor.execute(query_check_pregunta_1, (respuesta.id_pregunta,0))
+        if cursor.fetchone() is not None:
+            raise HTTPException(status_code=404, detail="La pregunta es cerrada, no deberias poner opciones ahi")
+
+        # Insertar nuevo evento en la base de datos
+        query = "INSERT INTO respuesta_abierta (id_pregunta, id_encuesta, respuesta) VALUES (%s,%s,%s)"
+        evento_data = (respuesta.id_pregunta, respuesta.id_encuesta, respuesta.respuesta)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_pregunta': respuesta.id_pregunta,
+            'id_encuesta': respuesta.id_encuesta,
+            'opcion': respuesta.respuesta
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar pregunta en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear una opcion")
+    finally:
+        cursor.close()
+        connection.close()
+
+# @app.put("/opcion/editar/{id_opcion}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una opcion", tags=['Opciones'])
+# def editar_opcion(opcion:EditarOpcion, id_opcion: int):
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+#     try:
+#         # Actualizar pregunta en la base de datos
+#         query = "UPDATE opcion SET opcion = %s WHERE id_opcion = %s"
+#         evento_data = (opcion, id_opcion)
+#         cursor.execute(query, evento_data)
+#         connection.commit()
+#         return {
+#             'opcion': opcion.opcion
+#         }
+#     except mysql.connector.Error as err:
+#         # Manejar errores de la base de datos
+#         print(f"Error al actualizar la opcion en la base de datos: {err}")
+#         raise HTTPException(status_code=500, detail="Error interno al actualizar opcion")
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+# @app.delete("/opcion/borrar/{id_opcion}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una opcion", tags=['Opciones'])
+# def borrar_opcion(id_opcion: int):
+#     # Conectar a la base de datos
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+
+#     # Verificar si el aviso existe y obtener la información del archivo
+#     cursor.execute("SELECT * FROM opcion WHERE id_opcion =%s", (id_opcion,))
+#     aviso = cursor.fetchone()
+    
+#     if not aviso:
+#         raise HTTPException(status_code=404, detail="Ubicacion no encontrada")
+
+#     # Eliminar el aviso de la base de datos
+#     cursor.execute("DELETE FROM opcion WHERE id_opcion =%s", (id_opcion,))
+#     connection.commit()
+
+#     return JSONResponse(content={"message": "Aviso borrado correctamente", "id_pregunta": id_opcion})
