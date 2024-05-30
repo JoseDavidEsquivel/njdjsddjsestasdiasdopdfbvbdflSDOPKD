@@ -142,6 +142,10 @@ class Requisito(BaseModel):
 class Editar_requisito(BaseModel):
     requisito: str
 
+class Color(BaseModel):
+    nombre_color: str
+    valor_hex: str
+
 app.mount("/static", StaticFiles(directory="static"),name="static")
 
 # funciones extra
@@ -2640,7 +2644,6 @@ async def crear_documento(
         cursor.close()
         connection.close()
 
-
 @app.delete("/documento/borrar/{id_documento}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un documento", tags=['Documentos'])
 def borrar_documento(id_documento: int):
     connection = mysql.connector.connect(**db_config)
@@ -2911,3 +2914,115 @@ def borrar_requisito(id_requisito: int):
 
     return JSONResponse(content={"message": "Requisito borrado correctamente", "id_requisito": id_requisito})
 
+@app.get("/color",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los colores existentes", tags=['Colores'])
+def listar_colores():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM colores")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_color':row[0],
+                    'nombre_color':row[1],
+                    'valor_hex': row[2]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay colores en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/color/{id_color}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar colores en la bd", tags=['Colores'])
+def detalle_color(id_color:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM colores WHERE id_color = %s"
+        cursor.execute(query, (id_color,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_color':row[0],
+                    'nombre_color':row[1],
+                    'valor_hex': row[2]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe un color con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/color/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un color", tags=['Colores'])
+def crear_color(color:Color):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Insertar una respesta cerrada en la base de datos
+        query = "INSERT INTO colores (nombre_color, valor_hex) VALUES (%s, %s)"
+        evento_data = (color.nombre_color, color.valor_hex)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'nombre_color': color.nombre_color,
+            'valor_hex': color.valor_hex
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar color en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear un color")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.put("/color/editar/{id_color}", status_code=status.HTTP_200_OK, summary="Endpoint para editar un color", tags=['Colores'])
+def editar_color(color:Color, id_color:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE colores SET nombre_color = %s, valor_hex = %s WHERE id_color = %s"
+        evento_data = (color.nombre_color, color.valor_hex, id_color)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_color': id_color,
+            'nombre_color': color.nombre_color,
+            'valor_hex': color.valor_hex
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar el color en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar el color")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/color/borrar/{id_color}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un color", tags=['Colores'])
+def borrar_color(id_color: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM colores WHERE id_color =%s", (id_color,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Color no encontrado")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM colores WHERE id_color =%s", (id_color,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Color borrado correctamente", "id_color": id_color})
