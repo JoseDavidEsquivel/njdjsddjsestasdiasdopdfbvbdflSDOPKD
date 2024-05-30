@@ -96,13 +96,51 @@ class EditarOpcion(BaseModel):
     opcion: str
 
 class Respuesta_abierta(BaseModel):
-    id_opcion: int
     id_pregunta:int
     id_encuesta: int
     respuesta: str
 
 class Editar_respuesta_abierta(BaseModel):
     respuesta: str
+
+class Respuesta_cerrada(BaseModel):
+    id_opcion: int
+    id_pregunta:int
+    id_encuesta: int
+
+class Editar_respuesta_cerrada(BaseModel):
+    id_opcion: int
+
+class Articulo(BaseModel):
+    num_articulo: int
+
+class Fraccion(BaseModel):
+    fraccion: str
+    descripcion: str
+    area: str
+    num_articulo: int
+
+class Año(BaseModel):
+    año: int
+    id_fraccion: int
+
+class Trimestre(BaseModel):
+    trimestre: int
+    id_año: int
+
+class Documento(BaseModel):
+    id_trimestre: int
+    documento: str
+
+class Tramite(BaseModel):
+    nombre: str
+
+class Requisito(BaseModel):
+    requisito: str
+    id_tramite: int
+
+class Editar_requisito(BaseModel):
+    requisito: str
 
 app.mount("/static", StaticFiles(directory="static"),name="static")
 
@@ -124,16 +162,15 @@ def generar_contrasena_salt (contrasena):
     return (contrasena_hashed_base64,salt_base64)
 
 # Función para verificar las credenciales
-def verificar_credenciales(nombre: str, contrasena: str) -> bool:
+def verificar_credenciales(nombre: str, contrasena: str):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
-        query = "SELECT contrasena, salt, permisos FROM usuarios WHERE nombre = %s;"
+        query = "SELECT contrasena, salt, permisos, estado FROM usuarios WHERE nombre = %s;"
         cursor.execute(query, (nombre,))
         usuario = cursor.fetchone()
 
         if usuario:
-
             contrasena_db, salt_base64 = usuario[0], usuario[1]
             salt_original = base64.b64decode(salt_base64.encode('utf-8'))
 
@@ -141,26 +178,27 @@ def verificar_credenciales(nombre: str, contrasena: str) -> bool:
             contrasena_con_salt = salt_original + contrasena.encode('utf-8')
             sha256_hash = hashlib.sha256(contrasena_con_salt).digest()
             contrasena_hashed = base64.b64encode(sha256_hash).decode('utf-8')
-            # Comparar las contraseñas hasheadas
+
             if contrasena_hashed == contrasena_db:
-                nivel_permiso = usuario[2]
-                if nivel_permiso == 1:
-                    rol = 'administrador'
+                estado = usuario[3]
+                if estado == '0':
+                    return {"mensaje": "Usuario no activo"}
                 else:
-                    rol = 'director'
-                return {'Sesion':True,
-                        'Permiso':rol
-                        }
+                    nivel_permiso = usuario[2]
+                    print
+                    rol = 'administrador' if nivel_permiso == '1' else 'director'
+                    return {"mensaje": "Credenciales correctas", "rol": rol}
             else:
-                return False
+                return {"mensaje": "Credenciales incorrectas"}
         else:
-            return False
+            return {"mensaje": "Credenciales incorrectas"}
     except mysql.connector.Error as err:
         print(f"Error al verificar credenciales en la base de datos: {err}")
-        return False
+        return {"mensaje": "Error al verificar credenciales en la base de datos"}
     finally:
         cursor.close()
         connection.close()
+
 
 # Endpoint raiz
 @app.get("/", status_code=status.HTTP_200_OK, summary="Endpoint raiz", tags=['Root'])
@@ -170,11 +208,14 @@ def root():
 # Endpoint para iniciar sesión
 @app.post("/login", status_code=status.HTTP_200_OK, summary="Endpoint para iniciar sesión", tags=['Login'])
 def iniciar_sesion(credenciales: Credenciales):
-    if verificar_credenciales(credenciales.nombre, credenciales.contrasena):
-        return {"mensaje": "Sesión iniciada"}
+    resultado_verificacion = verificar_credenciales(credenciales.nombre, credenciales.contrasena)
+
+    if resultado_verificacion["mensaje"] == "Credenciales correctas":
+        return {"mensaje": "Sesión iniciada", "rol": resultado_verificacion["rol"]}
+    elif resultado_verificacion["mensaje"] == "Usuario no activo":
+        raise HTTPException(status_code=403, detail="Usuario no activo")
     else:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-
 
 # Para el modulo de Usuarios
 # Listar todos los usuarios (sin la contraseña)
@@ -236,7 +277,7 @@ def detalle_usuario(id_usuario: int):
         connection.close()
 
 # Crear un usuario
-@app.post("/usuario/crear", status_code=status.HTTP_201_CREATED, summary="Endpoint para crear un nuevo usuario", tags=['Usuario'])
+@app.post("/usuario/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un nuevo usuario", tags=['Usuario'])
 def crear_usuario(usuario: Usuario):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
@@ -311,10 +352,6 @@ def editar_usuario(id_usuario: int, usuario: Usuario):
         cursor.execute(query, usuario_data)
         connection.commit()
 
-        # # Verificar si se actualizó algún registro
-        # if cursor.rowcount == 0:
-        #     raise HTTPException(status_code=404, detail=f"Usuario con id {id_usuario} no encontrado")
-
         return {"mensaje": f"Usuario con id {id_usuario} actualizado correctamente"}
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
@@ -332,7 +369,7 @@ def borrar_usuario(id_usuario: int):
     try:
         query = "DELETE FROM usuarios WHERE id_usuario = %s;"
         cursor.execute(query, (id_usuario,))
-        connection.commit()  # Es importante hacer commit después de un DELETE en la base de datos
+        connection.commit() 
 
         if cursor.rowcount > 0:
             return {"mensaje": f"Usuario con id {id_usuario} eliminado correctamente"}
@@ -569,6 +606,33 @@ def listar_avisos():
         cursor.close()
         connection.close()
 
+@app.get("/avisos/activos",status_code=status.HTTP_200_OK, summary="Endpoint para listar los avisos de la pagina", tags=['Carrusel'])
+def listar_avisos_activos():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM carrusel WHERE estado ='1'")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_aviso':row[0],
+                    'imagen': row[1],
+                    'ruta': row[2],
+                    'estado': row[3],
+                    'url': row[4]
+                }
+                respuesta.append(dato)
+            
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay avisos activos en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
 @app.get("/aviso/{id_aviso}",status_code=status.HTTP_200_OK, summary="Endpoint para listar un aviso del carrusel de la pagina", tags=['Carrusel'])
 def detalle_aviso(id_aviso:int):
     connection = mysql.connector.connect(**db_config)
@@ -770,7 +834,7 @@ def detalle_ubicacion(id_ubicacion:int):
 
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No hay ubicaciones en la Base de datos")
+            raise HTTPException(status_code=404, detail="No existe esa ubicacion en la Base de datos")
     finally:
         cursor.close()
         connection.close()
@@ -792,8 +856,8 @@ def crear_ubicaciones(ubicaciones:Ubicaciones):
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
-        print(f"Error al insertar usuario en la base de datos: {err}")
-        raise HTTPException(status_code=500, detail="Error interno al crear usuario")
+        print(f"Error al insertar ubicacion en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear ubicacion")
     finally:
         cursor.close()
         connection.close()
@@ -838,7 +902,7 @@ def borrar_ubicacion(id_ubicacion: int):
     cursor.execute("DELETE FROM ubicaciones WHERE id_ubicacion=%s", (id_ubicacion,))
     connection.commit()
 
-    return JSONResponse(content={"message": "Aviso borrado correctamente", "aviso_id": id_ubicacion})
+    return JSONResponse(content={"message": "Ubicacion borrada correctamente", "id_ubicacion": id_ubicacion})
 
 @app.get("/contacto",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los contactos existentes", tags=['Contactos'])
 def listar_contactos():
@@ -917,7 +981,7 @@ def crear_contacto(contacto:Contacto):
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
-        print(f"Error al insertar usuario en la base de datos: {err}")
+        print(f"Error al insertar contacto en la base de datos: {err}")
         raise HTTPException(status_code=500, detail="Error interno al crear contacto")
     finally:
         cursor.close()
@@ -959,13 +1023,13 @@ def borrar_contacto(id_contacto: int):
     aviso = cursor.fetchone()
     
     if not aviso:
-        raise HTTPException(status_code=404, detail="Ubicacion no encontrada")
+        raise HTTPException(status_code=404, detail="Contacto no encontrado")
 
     # Eliminar el aviso de la base de datos
     cursor.execute("DELETE FROM contactos WHERE id_contactos =%s", (id_contacto,))
     connection.commit()
 
-    return JSONResponse(content={"message": "Aviso borrado correctamente", "aviso_id": id_contacto})
+    return JSONResponse(content={"message": "Contacto borrado correctamente", "id_contacto": id_contacto})
 
 @app.get("/noticia",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las noticias existentes", tags=['Noticias'])
 def listar_noticias():
@@ -980,16 +1044,16 @@ def listar_noticias():
                 dato = {
                     'id_titulo': row[0],
                     'titulo': row[1],
-                    'resumen':row[2],
-                    'contenido':row[3],
-                    'imagen':row[4]
+                    'contenido':row[2],
+                    'imagen':row[3],
+                    'ruta':row[4]
                 }
                 respuesta.append(dato)
             
 
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No hay contactos en la Base de datos")
+            raise HTTPException(status_code=404, detail="No hay noticias en la Base de datos")
     finally:
         cursor.close()
         connection.close()
@@ -1008,16 +1072,16 @@ def detalle_noticia(id_noticia:int):
                 dato = {
                     'id_titulo': row[0],
                     'titulo': row[1],
-                    'resumen':row[2],
-                    'contenido':row[3],
-                    'imagen':row[4]
+                    'contenido':row[2],
+                    'imagen':row[3],
+                    'ruta':row[4]
                 }
                 respuesta.append(dato)
             
 
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No hay contactos en la Base de datos")
+            raise HTTPException(status_code=404, detail="No hay noticias con ese id en la Base de datos")
     finally:
         cursor.close()
         connection.close()
@@ -1025,7 +1089,6 @@ def detalle_noticia(id_noticia:int):
 @app.post("/noticia/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una noticia y que se vea reflejado en la seccion de preguntas", tags=['Noticias'])
 async def crear_noticia(
     titulo: str = Form(...),
-    resumen: str = Form(...),
     contenido: str = Form(...),
     file: UploadFile = File(...)
 ):
@@ -1049,27 +1112,26 @@ async def crear_noticia(
         raise HTTPException(status_code=400, detail="Invalid image file")
 
     # Mover el archivo al directorio final si pasa las validaciones
-    final_location = f"static/images/carrusel/{file.filename}"
+    final_location = f"static/images/noticias/{file.filename}"
     shutil.move(file_location, final_location)
 
     # Insertar datos en la base de datos
-    query = 'INSERT INTO noticias (titulo, resumen, contenido, imagen) VALUES (%s,%s,%s,%s)'
-    usuario_data = (titulo, resumen, contenido,file.filename)
+    query = 'INSERT INTO noticias (titulo, contenido, imagen, ruta) VALUES (%s,%s,%s,%s)'
+    usuario_data = (titulo, contenido,file.filename, 'static/images/noticias/')
     cursor.execute(query, usuario_data)
     connection.commit()
 
     return JSONResponse(content={
         'titulo': titulo,
-        'resumen':resumen,
         'contenido':contenido,
-        'imagen': file.filename      
+        'imagen': file.filename,
+        'ruta':'static/images/noticias/'
     })
 
 @app.put("/noticia/editar/{id_noticia}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una noticia existente", tags=['Noticias'])
 async def editar_noticia(
     id_noticia: int,
     titulo: str = Form(...),
-    resumen: str = Form(...),
     contenido: str = Form(...),
     file: UploadFile = File(None)  # Archivo opcional para la edición
 ):
@@ -1098,12 +1160,12 @@ async def editar_noticia(
         shutil.move(file_location, final_location)
 
         # Actualizar los datos en la base de datos
-        query = 'UPDATE noticias SET titulo=%s, resumen=%s, contenido=%s, imagen=%s WHERE id_noticia=%s'
-        usuario_data = (titulo,resumen,contenido,file.filename,id_noticia)
+        query = 'UPDATE noticias SET titulo=%s, contenido=%s, imagen=%s WHERE id_noticia=%s'
+        usuario_data = (titulo,contenido,file.filename,id_noticia)
     else:
         # Actualizar los datos en la base de datos sin cambiar la imagen
-        query = 'UPDATE noticias SET titulo=%s, resumen=%s, contenido=%s WHERE id_noticia=%s'
-        usuario_data = (titulo,resumen,contenido,id_noticia)
+        query = 'UPDATE noticias SET titulo=%s, contenido=%s WHERE id_noticia=%s'
+        usuario_data = (titulo,id_noticia)
 
     cursor.execute(query, usuario_data)
     connection.commit()
@@ -1111,23 +1173,25 @@ async def editar_noticia(
     return JSONResponse(content={
         "id_noticia": id_noticia,
         "titulo": titulo,
-        "resumen": resumen,
-        "imagen": file.filename if file else "No se cambió la imagen"
-        
+        "imagen": file.filename if file else "No se cambió la imagen"        
     })
 
-@app.delete("/noticia/borrar/{id_noticias}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una noticia existente", tags=['Noticias'])
+@app.delete("/noticia/borrar/{id_noticia}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una noticia existente", tags=['Noticias'])
 async def borrar_noticia(id_noticia: int):
     # Conectar a la base de datos
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
 
     # Verificar si el aviso existe y obtener la información del archivo
-    cursor.execute("SELECT imagen FROM noticias WHERE id_noticia=%s", (id_noticia,))
+    cursor.execute("SELECT * FROM noticias WHERE id_noticia=%s", (id_noticia,))
     aviso = cursor.fetchone()
     
     if not aviso:
-        raise HTTPException(status_code=404, detail="Aviso no encontrado")
+        raise HTTPException(status_code=404, detail="Noticia no encontrada")
+    
+    cursor.execute("SELECT imagen FROM noticias WHERE id_noticia=%s", (id_noticia,))
+    aviso = cursor.fetchone()
+    
 
     # Obtener el nombre del archivo
     file_name = aviso[0]
@@ -1156,15 +1220,16 @@ def listar_eventos():
                 dato = {
                     "id_evento":row[0],
                     "titulo": row[1],
-                    "fecha":row[2],
-                    "hora":row[3]
+                    "descripcion":row[2],
+                    "fecha":row[3],
+                    "hora":row[4]
                 }
                 respuesta.append(dato)
             
 
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No hay contactos en la Base de datos")
+            raise HTTPException(status_code=404, detail="No hay eventos en la Base de datos")
     finally:
         cursor.close()
         connection.close()
@@ -1183,8 +1248,9 @@ def detalle_evento(id_evento:int):
                 dato = {
                     "id_evento":row[0],
                     "titulo": row[1],
-                    "fecha":row[2],
-                    "hora":row[3]
+                    "descripcion":row[2],
+                    "fecha":row[3],
+                    "hora":row[4]
                 }
                 respuesta.append(dato)
             
@@ -1899,7 +1965,7 @@ def borrar_respuesta_abierta(id_respuesta_abierta: int):
 
     return JSONResponse(content={"message": "Respuesta borrada correctamente", "id_respuesta_abierta": id_respuesta_abierta})
 
-@app.get("/respuesta_cerrada",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las respuestas cerradas existentes", tags=['Respuestas_abiertas'])
+@app.get("/respuesta_cerrada",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las respuestas cerradas existentes", tags=['Respuestas_cerradas'])
 def listar_respuestas_cerradas():
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
@@ -1924,13 +1990,13 @@ def listar_respuestas_cerradas():
         cursor.close()
         connection.close()
 
-@app.get("/respuesta_abierta/{id_respuesta_abierta}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar una respuesta abierta en la bd", tags=['Respuestas_abiertas'])
-def detalle_respuesta_abierta(id_respuesta_abierta:int):
+@app.get("/respuesta_cerrada/{id_respuesta_cerrada}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar una respuesta cerrada en la bd", tags=['Respuestas_cerradas'])
+def detalle_respuesta_cerrada(id_respuesta_cerrada:int):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
-        query = "SELECT * FROM respuesta_abierta WHERE id_respuesta_abierta = %s"
-        cursor.execute(query, (id_respuesta_abierta,))
+        query = "SELECT * FROM respuesta_cerrada WHERE id_respuesta = %s"
+        cursor.execute(query, (id_respuesta_cerrada,))
         datos = cursor.fetchall()
         if datos:
             respuesta = []
@@ -1945,13 +2011,13 @@ def detalle_respuesta_abierta(id_respuesta_abierta:int):
 
             return respuesta
         else:
-            raise HTTPException(status_code=404, detail="No existe una respuesta abierta con ese id en la Base de datos")
+            raise HTTPException(status_code=404, detail="No existe una respuesta cerrada con ese id en la Base de datos")
     finally:
         cursor.close()
         connection.close()
 
-@app.post("/respuesta_abierta/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una respuesta abierta", tags=['Respuestas_abiertas'])
-def crear_respuesta_abierta(respuesta:Respuesta_abierta):
+@app.post("/respuesta_cerrada/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una respuesta cerrada", tags=['Respuestas_cerradas'])
+def crear_respuesta_cerrada(respuesta:Respuesta_cerrada):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
@@ -1961,27 +2027,33 @@ def crear_respuesta_abierta(respuesta:Respuesta_abierta):
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail="La encuesta no existe")
         
-        # Verificar si el id_pregunta existe en la tabla encuestas
+        # Verificar si el id_pregunta existe en la tabla preguntas
         query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s"
         cursor.execute(query_check_pregunta_1, (respuesta.id_pregunta,))
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail="La pregunta no existe")
         
-        # Verificar si el id_pregunta existe en la tabla encuestas
+        # Verificar si la pregunta es abierta o cerrada
         query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s AND pregunta_abierta = %s"
         cursor.execute(query_check_pregunta_1, (respuesta.id_pregunta,1))
         if cursor.fetchone() is not None:
-            raise HTTPException(status_code=404, detail="La pregunta es cerrada, no deberias poner opciones ahi")
+            raise HTTPException(status_code=404, detail="La pregunta es abierta, como se supone que va a hacer eso??")
+        
+        # Verificar si el id_opcion existe en la tabla opcion
+        query_check_pregunta_1 = "SELECT 1 FROM opcion WHERE id_opcion = %s"
+        cursor.execute(query_check_pregunta_1, (respuesta.id_opcion,))
+        if cursor.fetchone() is None:
+            raise HTTPException(status_code=404, detail="La opcion no existe")
 
-        # Insertar nuevo evento en la base de datos
-        query = "INSERT INTO respuesta_abierta (id_pregunta, id_encuesta, respuesta) VALUES (%s,%s,%s)"
-        evento_data = (respuesta.id_pregunta, respuesta.id_encuesta, respuesta.respuesta)
+        # Insertar una respesta cerrada en la base de datos
+        query = "INSERT INTO respuesta_cerrada (id_opcion, id_pregunta, id_encuesta) VALUES (%s,%s,%s)"
+        evento_data = (respuesta.id_opcion, respuesta.id_pregunta, respuesta.id_encuesta)
         cursor.execute(query, evento_data)
         connection.commit()
         return {
+            'id_opcion': respuesta.id_opcion,
             'id_pregunta': respuesta.id_pregunta,
-            'id_encuesta': respuesta.id_encuesta,
-            'respuesta': respuesta.respuesta
+            'id_encuesta': respuesta.id_encuesta
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
@@ -1991,18 +2063,18 @@ def crear_respuesta_abierta(respuesta:Respuesta_abierta):
         cursor.close()
         connection.close()
 
-@app.put("/respuesta_abierta/editar/{id_pregunta_abierta}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una respuesta_abierta", tags=['Respuestas_abiertas'])
-def editar_respuesta_abierta(respuesta:Editar_respuesta_abierta, id_pregunta_abierta: int):
+@app.put("/respuesta_cerrada/editar/{id_pregunta_cerrada}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una respuesta cerrada", tags=['Respuestas_cerradas'])
+def editar_respuesta_cerrada(respuesta:Editar_respuesta_cerrada, id_pregunta_abierta: int):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
         # Actualizar respuesta abierta en la base de datos
         query = "UPDATE respuesta_abierta SET respuesta = %s WHERE id_respuesta_abierta = %s"
-        evento_data = (respuesta.respuesta, id_pregunta_abierta)
+        evento_data = (respuesta.id_opcion, id_pregunta_abierta)
         cursor.execute(query, evento_data)
         connection.commit()
         return {
-            'nueva respuesta': respuesta.respuesta
+            'nueva opcion seleccionada': respuesta.id_opcion
         }
     except mysql.connector.Error as err:
         # Manejar errores de la base de datos
@@ -2012,21 +2084,830 @@ def editar_respuesta_abierta(respuesta:Editar_respuesta_abierta, id_pregunta_abi
         cursor.close()
         connection.close()
 
-@app.delete("/respuesta_abierta/borrar/{id_respuesta_abierta}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una respuesta abierta", tags=['Respuestas_abiertas'])
-def borrar_respuesta_abierta(id_respuesta_abierta: int):
+@app.delete("/respuesta_cerrada/borrar/{id_respuesta_cerrada}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una respuesta cerrada", tags=['Respuestas_cerradas'])
+def borrar_respuesta_cerrada(id_respuesta_cerrada: int):
     # Conectar a la base de datos
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
 
     # Verificar si la repuesta existe
-    cursor.execute("SELECT * FROM respuesta_abierta WHERE id_respuesta_abierta =%s", (id_respuesta_abierta,))
+    cursor.execute("SELECT * FROM respuesta_cerrada WHERE id_respuesta =%s", (id_respuesta_cerrada,))
     aviso = cursor.fetchone()
     
     if not aviso:
         raise HTTPException(status_code=404, detail="Respuesta no encontrada")
 
     # Eliminar el aviso de la base de datos
-    cursor.execute("DELETE FROM respuesta_abierta WHERE id_respuesta_abierta =%s", (id_respuesta_abierta,))
+    cursor.execute("DELETE FROM respuesta_cerrada WHERE id_respuesta =%s", (id_respuesta_cerrada,))
     connection.commit()
 
-    return JSONResponse(content={"message": "Respuesta borrada correctamente", "id_respuesta_abierta": id_respuesta_abierta})
+    return JSONResponse(content={"message": "Respuesta borrada correctamente", "id_respuesta_cerrada": id_respuesta_cerrada})
+
+@app.get("/articulo",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los articulos existentes", tags=['Articulos'])
+def listar_articulos():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM articulos")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_articulo':row[0],
+                    'num_articulo':row[1]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay articulos en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/articulo/{id_articulo}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar articulos en la bd", tags=['Articulos'])
+def detalle_articulo(id_articulo:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM articulos WHERE id_articulo = %s"
+        cursor.execute(query, (id_articulo,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_articulo':row[0],
+                    'num_articulo':row[1]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe un articulo con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/articulo/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un articulo", tags=['Articulos'])
+def crear_articulo(articulo:Articulo):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Insertar una respesta cerrada en la base de datos
+        query = "INSERT INTO articulos (num_articulo) VALUES (%s)"
+        evento_data = (articulo.num_articulo)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'num_articulo': articulo.num_articulo
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar articulo en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear un articulo")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.put("/articulo/editar/{id_articulo}", status_code=status.HTTP_200_OK, summary="Endpoint para editar un articulo", tags=['Articulos'])
+def editar_articulo(articulo:Articulo, id_articulo: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE articulos SET num_articulo = %s WHERE id_articulo = %s"
+        evento_data = (articulo.num_articulo, id_articulo)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'Nueva articulo editado': articulo.num_articulo
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar el articulo en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar el articulo")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/articulo/borrar/{id_articulo}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un articulo", tags=['Articulos'])
+def borrar_articulo(id_articulo: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM articulos WHERE id_articulo =%s", (id_articulo,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Articulo no encontrado")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM articulos WHERE id_articulo =%s", (id_articulo,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Articulo borrado correctamente", "id_articulo": id_articulo})
+
+@app.get("/fraccion",status_code=status.HTTP_200_OK, summary="Endpoint para listar todas las fracciones existentes", tags=['Fracciones'])
+def listar_fraccion():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM fracciones")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_fraccion':row[0],
+                    'fraccion':row[1],
+                    'descripcion': row[2],
+                    'area': row[3],
+                    'num_articulo': row[4]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay fracciones en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/fraccion/{id_fraccion}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar fracciones en la bd", tags=['Fracciones'])
+def detalle_fraccion(id_fraccion:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM fracciones WHERE id_fraccion = %s"
+        cursor.execute(query, (id_fraccion,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_fraccion':row[0],
+                    'fraccion':row[1],
+                    'descripcion': row[2],
+                    'area': row[3],
+                    'num_articulo': row[4]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe una fraccion con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/fraccion/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una fraccion", tags=['Fracciones'])
+def crear_fraccion(fraccion:Fraccion):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Insertar una respesta cerrada en la base de datos
+        query = "INSERT INTO fracciones (fraccion, descripcion, area, num_articulo) VALUES (%s, %s, %s, %s)"
+        evento_data = (fraccion.fraccion, fraccion.descripcion, fraccion.area, fraccion.num_articulo)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'fraccion':fraccion.fraccion,
+            'descripcion': fraccion.descripcion,
+            'area': fraccion.area,
+            'id articulo': fraccion.num_articulo
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar fraccion en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear una fraccion")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.put("/fraccion/editar/{id_fraccion}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una fraccion", tags=['Fracciones'])
+def editar_fraccion(fraccion:Fraccion, id_fraccion: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE fracciones SET fraccion = %s, descripcion = %s, area = %s, num_articulo = %s WHERE id_fraccion = %s"
+        evento_data = (fraccion.fraccion, fraccion.descripcion, fraccion.area, fraccion.num_articulo, id_fraccion)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_fraccion': id_fraccion,
+            'fraccion':fraccion.fraccion,
+            'descripcion': fraccion.descripcion,
+            'area': fraccion.area,
+            'id articulo': fraccion.num_articulo
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar la fraccion en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar la fraccion")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/fraccion/borrar/{id_fraccion}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar una fraccion", tags=['Fracciones'])
+def borrar_fraccion(id_fraccion: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM fracciones WHERE id_fraccion =%s", (id_fraccion,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Fraccion no encontrada")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM fracciones WHERE id_fraccion =%s", (id_fraccion,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Fraccion borrada correctamente", "id_fraccion": id_fraccion})
+
+@app.get("/año",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los años existentes", tags=['Años'])
+def listar_años():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM años")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_año':row[0],
+                    'año':row[1],
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay años en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/año/{id_año}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar años en la bd", tags=['Años'])
+def detalle_año(id_año:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM años WHERE id_año = %s"
+        cursor.execute(query, (id_año,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_año':row[0],
+                    'año':row[1],
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe un año con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE años SET año = %s, id_fraccion = %s WHERE id_año = %s"
+        evento_data = (año.año, año.id_fraccion, id_año)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_año':id_año,
+            'año': año.año,
+            'id_fraccion': año.id_fraccion
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar el año en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar el año")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/año/borrar/{id_año}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un año", tags=['Años'])
+def borrar_año(id_año: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM años WHERE id_año =%s", (id_año,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Año no encontrado")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM años WHERE id_año =%s", (id_año,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Año borrado correctamente", "id_año": id_año})
+
+# @app.get("/trimestre",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los trimestres existentes", tags=['Trimestres'])
+# def listar_trimestres():
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+#     try:
+#         cursor.execute("SELECT * FROM trimestres")
+#         datos = cursor.fetchall()
+#         if datos:
+#             respuesta = []
+#             for row in datos:
+#                 dato = {
+#                     'id_trimestre':row[0],
+#                     'trimestre':row[1],
+#                     'id_año': row[2]
+#                 }
+#                 respuesta.append(dato)
+            
+#             return respuesta
+#         else:
+#             raise HTTPException(status_code=404, detail="No hay trimestres en la Base de datos")
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+# @app.get("/trimestre/{id_trimestre}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar trimestre en la bd", tags=['Trimestres'])
+# def detalle_trimestre(id_trimestre:int):
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+#     try:
+#         query = "SELECT * FROM trimestres WHERE id_trimestre = %s"
+#         cursor.execute(query, (id_trimestre,))
+#         datos = cursor.fetchall()
+#         if datos:
+#             respuesta = []
+#             for row in datos:
+#                 dato = {
+#                     'id_trimestre':row[0],
+#                     'trimestre':row[1],
+#                     'id_año': row[2]
+#                 }
+#                 respuesta.append(dato)
+
+#             return respuesta
+#         else:
+#             raise HTTPException(status_code=404, detail="No existe un trimestre con ese id en la Base de datos")
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+# @app.post("/trimestre/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un trimestre", tags=['Trimestres'])
+# def crear_trimestre(trimestre:Trimestre):
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+#     try:
+#         # Insertar una respesta cerrada en la base de datos
+#         query = "INSERT INTO trimestres (trimestre, id_año) VALUES (%s, %s)"
+#         evento_data = (trimestre.trimestre, trimestre.id_año)
+#         cursor.execute(query, evento_data)
+#         connection.commit()
+#         return {
+#             'trimestre': trimestre.trimestre,
+#             'id_año': trimestre.id_año
+#         }
+#     except mysql.connector.Error as err:
+#         # Manejar errores de la base de datos
+#         print(f"Error al insertar trimestre en la base de datos: {err}")
+#         raise HTTPException(status_code=500, detail="Error interno al crear trimestre")
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+# @app.put("/trimestre/editar/{id_trimestre}", status_code=status.HTTP_200_OK, summary="Endpoint para editar un trimestre", tags=['Trimestres'])
+# def editar_trimestre(trimestre:Trimestre, id_trimestre: int):
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+#     try:
+#         # Actualizar respuesta abierta en la base de datos
+#         query = "UPDATE trimestres SET trimestre = %s, id_año = %s WHERE id_trimestre = %s"
+#         evento_data = (trimestre.trimestre, trimestre.id_año, id_trimestre)
+#         cursor.execute(query, evento_data)
+#         connection.commit()
+#         return {
+#             'id_trimestre':id_trimestre,
+#             'trimestre': trimestre.trimestre,
+#             'id_año': trimestre.id_año
+#         }
+#     except mysql.connector.Error as err:
+#         # Manejar errores de la base de datos
+#         print(f"Error al actualizar el trimestre en la base de datos: {err}")
+#         raise HTTPException(status_code=500, detail="Error interno al actualizar trimestre")
+#     finally:
+#         cursor.close()
+#         connection.close()
+
+# @app.delete("/trimestre/borrar/{id_trimestre}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un trimestre", tags=['Trimestres'])
+# def borrar_trimestre(id_trimestre: int):
+#     # Conectar a la base de datos
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+
+#     # Verificar si la repuesta existe
+#     cursor.execute("SELECT * FROM trimestres WHERE id_trimestre =%s", (id_trimestre,))
+#     aviso = cursor.fetchone()
+    
+#     if not aviso:
+#         raise HTTPException(status_code=404, detail="Trimestre no encontrado")
+
+#     # Eliminar el aviso de la base de datos
+#     cursor.execute("DELETE FROM trimestres WHERE id_trimestre =%s", (id_trimestre,))
+#     connection.commit()
+
+#     return JSONResponse(content={"message": "Trimestre borrado correctamente", "id_trimestre": id_trimestre})
+
+
+@app.get("/documento",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los documentos existentes", tags=['Documentos'])
+def listar_documentos():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM documentos")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_documento':row[0],
+                    'documento':row[1],
+                    'trimestre': row[2],
+                    'año':row[3],
+                    'id_fraccion':row[4]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay documentos en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/documento/{id_documento}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar un documento en la bd", tags=['Documentos'])
+def detalle_documento(id_documento:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM documentos WHERE id_documento = %s"
+        cursor.execute(query, (id_documento,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_documento':row[0],
+                    'documento':row[1],
+                    'trimestre': row[2],
+                    'año':row[3],
+                    'id_fraccion':row[4]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe un documento con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/documento/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un documento", tags=['Documentos'])
+async def crear_documento(
+    id_fraccion: int = Form(...),
+    año: str = Form(...),
+    trimestre: str = Form(...),
+    file: UploadFile = File(...)):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Obtener el fraccion y num_articulo desde la base de datos
+        cursor.execute("""
+            SELECT f.fraccion, a.num_articulo 
+            FROM fracciones f
+            JOIN articulos a ON f.num_articulo = a.num_articulo
+            WHERE f.id_fraccion = %s
+        """, (id_fraccion,))
+        fraccion_articulo = cursor.fetchone()
+        
+        if not fraccion_articulo:
+            raise HTTPException(status_code=404, detail="Fracción o artículo no encontrado")
+        
+        fraccion, articulo = fraccion_articulo
+
+        # Crear la ruta del archivo con la estructura especificada
+        directory = os.path.join(f"static/documents/transparencia/{str(articulo)}/{fraccion}/{str(año)}")
+        os.makedirs(directory, exist_ok=True)
+        file_location = os.path.join(f"{directory}/{file.filename}")
+
+        # Guardar el archivo localmente
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
+
+        # Insertar documento en la base de datos
+        query = "INSERT INTO documentos (documento, trimestre, año, id_fraccion) VALUES (%s, %s, %s, %s)"
+        evento_data = (file.filename, trimestre, año, id_fraccion)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_documento': cursor.lastrowid,
+            'documento': file.filename,
+            'trimestre': trimestre,
+            'año': año,
+            'id_fraccion': id_fraccion,
+            'ruta': file_location
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar documento en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear documento")
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@app.delete("/documento/borrar/{id_documento}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un documento", tags=['Documentos'])
+def borrar_documento(id_documento: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Verificar si el documento existe y obtener sus detalles
+        cursor.execute("SELECT documento, año, id_fraccion FROM documentos WHERE id_documento = %s", (id_documento,))
+        documento_data = cursor.fetchone()
+
+        if not documento_data:
+            raise HTTPException(status_code=404, detail="Documento no encontrado")
+        
+        documento, año, id_fraccion = documento_data
+
+        # Obtener fraccion y num_articulo desde la base de datos
+        cursor.execute("""
+            SELECT f.fraccion, a.num_articulo 
+            FROM fracciones f
+            JOIN articulos a ON f.num_articulo = a.num_articulo
+            WHERE f.id_fraccion = %s
+        """, (id_fraccion,))
+        fraccion_articulo = cursor.fetchone()
+        
+        if not fraccion_articulo:
+            raise HTTPException(status_code=404, detail="Fracción o artículo no encontrado")
+        
+        fraccion, articulo = fraccion_articulo
+
+        # Construir la ruta completa del archivo
+        file_location = os.path.join(f"static/documents/transparencia/{str(articulo)}/{fraccion}/{str(año)}/{documento}")
+
+        # Eliminar el archivo localmente
+        if os.path.exists(file_location):
+            os.remove(file_location)
+        else:
+            raise HTTPException(status_code=404, detail="Archivo no encontrado en el sistema de archivos")
+
+        # Eliminar el documento de la base de datos
+        cursor.execute("DELETE FROM documentos WHERE id_documento = %s", (id_documento,))
+        connection.commit()
+
+        return JSONResponse(content={"message": "Documento borrado correctamente", "id_documento": id_documento})
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al borrar el documento en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al borrar documento")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/tramite",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los tramites y servicios existentes", tags=['Tramites y Servicios'])
+def listar_tramites_servicios():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM tramites_servicios")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_tramite':row[0],
+                    'nombre':row[1]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay tramites ni servicios en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/tramite/{id_tramite}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar tramites y servicios en la bd", tags=['Tramites y Servicios'])
+def detalle_tramite_servicio(id_tramite:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM tramites_servicios WHERE id_tramite = %s"
+        cursor.execute(query, (id_tramite,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_tramite':row[0],
+                    'nombre':row[1]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe ningun tramite o servicio con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/tramite/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un tramite o servicio", tags=['Tramites y Servicios'])
+def crear_tramite_servicio(tramite:Tramite):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Insertar una respesta cerrada en la base de datos
+        query = "INSERT INTO tramites_servicios (nombre) VALUES (%s)"
+        evento_data = (tramite.nombre)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'nombre': tramite.nombre
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar articulo en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear un tramite o servicio")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.put("/tramite/editar/{id_tramite}", status_code=status.HTTP_200_OK, summary="Endpoint para editar un tramite o servicio", tags=['Tramites y Servicios'])
+def editar_tramite_servicio(tramite:Tramite, id_tramite: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE tramites_servicios SET nombre = %s WHERE id_tramite = %s"
+        evento_data = (tramite.nombre, id_tramite)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'nombre nuevo': tramite.nombre
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar el tramite o servicio en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar el tramite o servicio")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/tramite/borrar/{id_tramite}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un tramite o servicio", tags=['Tramites y Servicios'])
+def borrar_tramite_servicio(id_tramite: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM tramites_servicios WHERE id_tramite =%s", (id_tramite,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Articulo no encontrado")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM tramites_servicios WHERE id_tramite =%s", (id_tramite,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Tramite o servicio borrado correctamente", "id_tramite": id_tramite})
+
+@app.get("/requisito",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los requisitos", tags=['Requisitos'])
+def listar_tramites_servicios():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM requisitos")
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_requisito':row[0],
+                    'requisito':row[1],
+                    'id_tramite':row[0]
+                }
+                respuesta.append(dato)
+            
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No hay requisitos en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/requisito/{id_requisito}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar requisitos en la bd", tags=['Requisitos'])
+def detalle_requisito(id_requisito:int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        query = "SELECT * FROM requisitos WHERE id_requisito = %s"
+        cursor.execute(query, (id_requisito,))
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_requisito':row[0],
+                    'requisito':row[1],
+                    'id_tramite':row[0]
+                }
+                respuesta.append(dato)
+
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No existe ningun requisito con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post("/requisito/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un requisito", tags=['Requisitos'])
+def crear_requisito(requisito:Requisito):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Insertar una respesta cerrada en la base de datos
+        query = "INSERT INTO tramites_servicios (requisito, id_tramite) VALUES (%s, %s)"
+        evento_data = (requisito.requisito, requisito.id_tramite)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'requisito': requisito.requisito,
+            'id_tramite': requisito.id_tramite
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al insertar requisito en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al crear un requisito")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.put("/requisito/editar/{id_requisito}", status_code=status.HTTP_200_OK, summary="Endpoint para editar un requisito", tags=['Requisitos'])
+def editar_requisito(requisito:Editar_requisito, id_requisito: int):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+    try:
+        # Actualizar respuesta abierta en la base de datos
+        query = "UPDATE requisitos SET requisito = %s WHERE id_requisito = %s"
+        evento_data = (requisito.requisito, id_requisito)
+        cursor.execute(query, evento_data)
+        connection.commit()
+        return {
+            'id_requisito':id_requisito,
+            'nombre nuevo': requisito.requisito
+        }
+    except mysql.connector.Error as err:
+        # Manejar errores de la base de datos
+        print(f"Error al actualizar el requisito en la base de datos: {err}")
+        raise HTTPException(status_code=500, detail="Error interno al actualizar el requisito")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.delete("/requisito/borrar/{id_requisito}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un requisito", tags=['Requisitos'])
+def borrar_requisito(id_requisito: int):
+    # Conectar a la base de datos
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Verificar si la repuesta existe
+    cursor.execute("SELECT * FROM requisitos WHERE id_requisito =%s", (id_requisito,))
+    aviso = cursor.fetchone()
+    
+    if not aviso:
+        raise HTTPException(status_code=404, detail="Requisito no encontrado")
+
+    # Eliminar el aviso de la base de datos
+    cursor.execute("DELETE FROM requisitos WHERE id_requisito =%s", (id_requisito,))
+    connection.commit()
+
+    return JSONResponse(content={"message": "Requisito borrado correctamente", "id_requisito": id_requisito})
+

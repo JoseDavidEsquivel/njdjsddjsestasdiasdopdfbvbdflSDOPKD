@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 27-05-2024 a las 18:06:22
+-- Tiempo de generación: 30-05-2024 a las 17:29:55
 -- Versión del servidor: 10.4.28-MariaDB
 -- Versión de PHP: 8.2.4
 
@@ -20,6 +20,46 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `presidencia`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `articulos`
+--
+
+CREATE TABLE `articulos` (
+  `id_articulo` int(11) NOT NULL,
+  `num_articulo` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `articulos`
+--
+
+INSERT INTO `articulos` (`id_articulo`, `num_articulo`) VALUES
+(1, 69),
+(2, 70);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `años`
+--
+
+CREATE TABLE `años` (
+  `id_año` int(11) NOT NULL,
+  `año` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `años`
+--
+
+INSERT INTO `años` (`id_año`, `año`) VALUES
+(1, 2021),
+(2, 2022),
+(3, 2023),
+(4, 2024);
 
 -- --------------------------------------------------------
 
@@ -49,6 +89,36 @@ CREATE TABLE `carrusel` (
   `url` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `carrusel`
+--
+
+INSERT INTO `carrusel` (`id_imagen`, `imagen`, `ruta`, `estado`, `url`) VALUES
+(1, 'imagen.png', 'static/images/carrusel', '1', 'ejemplo.com'),
+(2, 'imagen.png', 'static/images/carrusel', '0', 'ejemploinactivo.com'),
+(3, 'imagen2.png', 'static/images/carrusel', '1', 'ejemploactivo.com');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `colores`
+--
+
+CREATE TABLE `colores` (
+  `id_color` int(11) NOT NULL,
+  `nombre_color` varchar(15) NOT NULL,
+  `valor_hex` varchar(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `colores`
+--
+
+INSERT INTO `colores` (`id_color`, `nombre_color`, `valor_hex`) VALUES
+(1, 'primario', '#2596be'),
+(2, 'secundario', '#085d94'),
+(3, 'fondo', '#312b1d');
+
 -- --------------------------------------------------------
 
 --
@@ -63,20 +133,42 @@ CREATE TABLE `contactos` (
   `horario` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `contactos`
+--
+
+INSERT INTO `contactos` (`id_contactos`, `nombre_institucion`, `tipo_contacto`, `contacto`, `horario`) VALUES
+(1, 'Presidencia Municipal', 'telefono', '01(775)7532914, 15, 16 Ext, 101 ', 'Horario de 8:30 AM a 4:30 PM'),
+(2, 'Agua Potable', 'telefono', '01(775)7546459', 'Horario de 8:30 AM a 4:30 PM');
+
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `docs_ley_general`
+-- Estructura de tabla para la tabla `documentos`
 --
 
-CREATE TABLE `docs_ley_general` (
+CREATE TABLE `documentos` (
   `id_documento` int(11) NOT NULL,
-  `articulo` enum('69','70') DEFAULT NULL,
-  `fraccion` varchar(100) DEFAULT NULL,
-  `año` int(11) DEFAULT NULL,
+  `documento` varchar(200) DEFAULT NULL,
   `trimestre` enum('1','2','3','4') DEFAULT NULL,
-  `ruta_archivo` varchar(50) DEFAULT NULL
+  `año` int(11) DEFAULT NULL,
+  `id_fraccion` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `documentos`
+--
+
+INSERT INTO `documentos` (`id_documento`, `documento`, `trimestre`, `año`, `id_fraccion`) VALUES
+(1, 'a69_f01.xlsx', '1', 2024, 1),
+(2, 'a69_f02.xlsx', '1', 2024, 2),
+(3, 'a69_f45.xlsx', '1', 2024, 3),
+(4, 'a69_f46.xlsx', '1', 2024, 4),
+(5, 'a70_f01_a1.xlsx', '1', 2024, 5),
+(6, 'a70_f01_b1.xlsx', '1', 2024, 6),
+(7, 'a69_f01 (1).xlsx', '1', 2024, 1),
+(8, 'a69_f01 (1).xlsx', '1', 2024, 1),
+(9, 'a69_f01 (1).xlsx', '1', 2024, 1);
 
 -- --------------------------------------------------------
 
@@ -88,6 +180,13 @@ CREATE TABLE `encuestas` (
   `id_encuesta` int(11) NOT NULL,
   `titulo` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `encuestas`
+--
+
+INSERT INTO `encuestas` (`id_encuesta`, `titulo`) VALUES
+(1, 'Encuesta Economica');
 
 -- --------------------------------------------------------
 
@@ -103,24 +202,38 @@ CREATE TABLE `eventos` (
   `hora` time DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `eventos`
+--
+
+INSERT INTO `eventos` (`id_evento`, `titulo`, `descripcion`, `fecha`, `hora`) VALUES
+(1, 'Feria de Santiago Tulantepec', 'Feria de Santiago Tulantepec', '2024-06-14', '00:00:00');
+
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `header`
+-- Estructura de tabla para la tabla `fracciones`
 --
 
-CREATE TABLE `header` (
-  `id_header` int(11) NOT NULL,
-  `imagen` varchar(255) NOT NULL,
-  `ruta` varchar(255) NOT NULL
+CREATE TABLE `fracciones` (
+  `id_fraccion` int(11) NOT NULL,
+  `fraccion` varchar(25) DEFAULT NULL,
+  `descripcion` varchar(50) DEFAULT NULL,
+  `area` varchar(75) DEFAULT NULL,
+  `num_articulo` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Volcado de datos para la tabla `header`
+-- Volcado de datos para la tabla `fracciones`
 --
 
-INSERT INTO `header` (`id_header`, `imagen`, `ruta`) VALUES
-(1, 'default_header.png', 'static/images/header/');
+INSERT INTO `fracciones` (`id_fraccion`, `fraccion`, `descripcion`, `area`, `num_articulo`) VALUES
+(1, '1', 'Marco normativo', 'Juridica', 69),
+(2, '2', 'Estructura organica', 'Juridica', 69),
+(3, '45', 'Catalogo y guia de archivos', 'Informatica', 69),
+(4, '46', 'Sesiones organos consultivos', 'Secretario', 69),
+(5, '1: A)', 'Plan de desarrollo', 'Innovacion', 70),
+(6, '1: B)', 'Presupuesto de egresos', 'Contador', 70);
 
 -- --------------------------------------------------------
 
@@ -150,10 +263,18 @@ INSERT INTO `logo` (`id_logo`, `imagen`, `ruta`) VALUES
 CREATE TABLE `noticias` (
   `id_noticia` int(11) NOT NULL,
   `titulo` varchar(100) DEFAULT NULL,
-  `resumen` text DEFAULT NULL,
   `contenido` longtext DEFAULT NULL,
-  `imagen` varchar(255) DEFAULT NULL
+  `imagen` varchar(255) DEFAULT NULL,
+  `ruta` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `noticias`
+--
+
+INSERT INTO `noticias` (`id_noticia`, `titulo`, `contenido`, `imagen`, `ruta`) VALUES
+(1, 'Reportan disparos vs alcadia de tlanchinol', 'Segun los informes preliminares, un grupo armado, a bordo de camionetas, disparo contra el inmueble, causando daños en las instalaciones', 'imagen.png', '/static/images/noticias'),
+(2, 'HOSPITAL en doxey, listo antes de que amlo se vaya', 'Julio Menchaca Salazar, gobernador de Hiladgo, aseguro que el presidente de la Republica le ha encargado que el hosputal de especialidades del instituto Mexicano del Seguro Social.', 'imagen.png', '/static/images/noticias');
 
 -- --------------------------------------------------------
 
@@ -166,6 +287,40 @@ CREATE TABLE `opcion` (
   `id_pregunta` int(11) DEFAULT NULL,
   `id_encuesta` int(11) DEFAULT NULL,
   `opcion` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `opcion`
+--
+
+INSERT INTO `opcion` (`id_opcion`, `id_pregunta`, `id_encuesta`, `opcion`) VALUES
+(1, 1, 1, 'Menos de $1,000'),
+(2, 1, 1, 'Entre $1,000 y $3,000'),
+(3, 1, 1, 'Entre $3,000 y $5,000'),
+(4, 1, 1, 'Más de $5,000'),
+(5, 2, 1, 'No ahorro'),
+(6, 2, 1, 'Menos de $100'),
+(7, 2, 1, 'Entre $100 y $500'),
+(8, 2, 1, 'Mas de $500'),
+(9, 3, 1, 'Inmuebles'),
+(10, 3, 1, 'Acciones'),
+(11, 3, 1, 'Bonos'),
+(12, 3, 1, 'Fondos de inversión'),
+(13, 3, 1, 'Criptomonedas'),
+(14, 3, 1, 'No estoy interesado en invertir');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `organigrama`
+--
+
+CREATE TABLE `organigrama` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `comision` varchar(100) NOT NULL,
+  `imagen` varchar(50) DEFAULT NULL,
+  `ruta` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -182,6 +337,40 @@ CREATE TABLE `preguntas` (
   `pregunta_cerrada_multiple` enum('0','1') DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Volcado de datos para la tabla `preguntas`
+--
+
+INSERT INTO `preguntas` (`id_pregunta`, `id_encuesta`, `pregunta`, `pregunta_abierta`, `pregunta_cerrada_multiple`) VALUES
+(1, 1, '¿Cuál es su ingreso mensual aproximado?', '0', '0'),
+(2, 1, '¿Cuánto ahorra mensualmente en promedio?', '0', '0'),
+(3, 1, '¿En qué tipo de inversiones está interesado o actualmente invierte?', '0', '1'),
+(4, 1, '¿Cuál es su mayor preocupación económica en este momento?', '1', '0');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `requisitos`
+--
+
+CREATE TABLE `requisitos` (
+  `id_requisito` int(11) NOT NULL,
+  `requisito` varchar(200) DEFAULT NULL,
+  `id_tramite` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `requisitos`
+--
+
+INSERT INTO `requisitos` (`id_requisito`, `requisito`, `id_tramite`) VALUES
+(1, 'Ultimo recibo de pago predial', 1),
+(2, 'Credencial de INSEN, INAPAM, Pensionado o Jubilado.', 1),
+(3, 'Escritura o titulo de propiedad', 1),
+(4, 'ACTA DE NACIMIENTO Legible', 2),
+(5, 'CONSTANCIA DE ESTUDIOS', 2),
+(6, 'COMPROBANTE DE DOMICILIO', 2);
+
 -- --------------------------------------------------------
 
 --
@@ -194,6 +383,13 @@ CREATE TABLE `respuesta_abierta` (
   `id_encuesta` int(11) DEFAULT NULL,
   `respuesta` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `respuesta_abierta`
+--
+
+INSERT INTO `respuesta_abierta` (`id_respuesta_abierta`, `id_pregunta`, `id_encuesta`, `respuesta`) VALUES
+(1, 4, 1, 'La verdad que me preocupa mucho el aspecto de algun despido inesperado con el cual tarde mucho en volver a tener algun trabajo estable');
 
 -- --------------------------------------------------------
 
@@ -211,6 +407,25 @@ CREATE TABLE `respuesta_cerrada` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `tramites_servicios`
+--
+
+CREATE TABLE `tramites_servicios` (
+  `id_tramite` int(11) NOT NULL,
+  `nombre` varchar(75) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `tramites_servicios`
+--
+
+INSERT INTO `tramites_servicios` (`id_tramite`, `nombre`) VALUES
+(1, 'Pago Predial'),
+(2, 'Cartilla Militar');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `ubicaciones`
 --
 
@@ -220,6 +435,15 @@ CREATE TABLE `ubicaciones` (
   `longitud` decimal(11,8) DEFAULT NULL,
   `lugar` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `ubicaciones`
+--
+
+INSERT INTO `ubicaciones` (`id_ubicacion`, `latitud`, `longitud`, `lugar`) VALUES
+(1, 20.03850760, -98.35464950, 'Presidencia de Santiago'),
+(2, 22.04895730, -97.93843480, 'Tu casa'),
+(3, 21.87454580, -98.26487240, 'La tienda');
 
 -- --------------------------------------------------------
 
@@ -238,8 +462,30 @@ CREATE TABLE `usuarios` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id_usuario`, `nombre`, `contrasena`, `area`, `estado`, `permisos`, `salt`) VALUES
+(1, 'Dejah', 'XqZZHydCwwL51F9WBZdy3GP/jEzYGBjx6UObSdd6QRU=', 'Administracion', '1', '1', 'OTsr9S4YM3eEjGRf8q53gg=='),
+(2, 'Bryan', 'K7VKZpBfzZWNKeDYCQ0aYjrXW+Vm4HTYvLIIwSJOWrg=', 'Contraloria', '0', '0', '/ANhFF9gd6iKtL8DFbnojA==');
+
+--
 -- Índices para tablas volcadas
 --
+
+--
+-- Indices de la tabla `articulos`
+--
+ALTER TABLE `articulos`
+  ADD PRIMARY KEY (`id_articulo`),
+  ADD UNIQUE KEY `num_articulo` (`num_articulo`);
+
+--
+-- Indices de la tabla `años`
+--
+ALTER TABLE `años`
+  ADD PRIMARY KEY (`id_año`),
+  ADD UNIQUE KEY `año` (`año`);
 
 --
 -- Indices de la tabla `bot`
@@ -254,16 +500,24 @@ ALTER TABLE `carrusel`
   ADD PRIMARY KEY (`id_imagen`);
 
 --
+-- Indices de la tabla `colores`
+--
+ALTER TABLE `colores`
+  ADD PRIMARY KEY (`id_color`);
+
+--
 -- Indices de la tabla `contactos`
 --
 ALTER TABLE `contactos`
   ADD PRIMARY KEY (`id_contactos`);
 
 --
--- Indices de la tabla `docs_ley_general`
+-- Indices de la tabla `documentos`
 --
-ALTER TABLE `docs_ley_general`
-  ADD PRIMARY KEY (`id_documento`);
+ALTER TABLE `documentos`
+  ADD PRIMARY KEY (`id_documento`),
+  ADD KEY `año` (`año`),
+  ADD KEY `id_fraccion` (`id_fraccion`);
 
 --
 -- Indices de la tabla `encuestas`
@@ -278,10 +532,11 @@ ALTER TABLE `eventos`
   ADD PRIMARY KEY (`id_evento`);
 
 --
--- Indices de la tabla `header`
+-- Indices de la tabla `fracciones`
 --
-ALTER TABLE `header`
-  ADD PRIMARY KEY (`id_header`);
+ALTER TABLE `fracciones`
+  ADD PRIMARY KEY (`id_fraccion`),
+  ADD KEY `num_articulo` (`num_articulo`);
 
 --
 -- Indices de la tabla `logo`
@@ -304,11 +559,24 @@ ALTER TABLE `opcion`
   ADD KEY `id_encuesta` (`id_encuesta`);
 
 --
+-- Indices de la tabla `organigrama`
+--
+ALTER TABLE `organigrama`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indices de la tabla `preguntas`
 --
 ALTER TABLE `preguntas`
   ADD PRIMARY KEY (`id_pregunta`),
   ADD KEY `id_encuesta` (`id_encuesta`);
+
+--
+-- Indices de la tabla `requisitos`
+--
+ALTER TABLE `requisitos`
+  ADD PRIMARY KEY (`id_requisito`),
+  ADD KEY `id_tramite` (`id_tramite`);
 
 --
 -- Indices de la tabla `respuesta_abierta`
@@ -328,6 +596,12 @@ ALTER TABLE `respuesta_cerrada`
   ADD KEY `id_encuesta` (`id_encuesta`);
 
 --
+-- Indices de la tabla `tramites_servicios`
+--
+ALTER TABLE `tramites_servicios`
+  ADD PRIMARY KEY (`id_tramite`);
+
+--
 -- Indices de la tabla `ubicaciones`
 --
 ALTER TABLE `ubicaciones`
@@ -345,6 +619,18 @@ ALTER TABLE `usuarios`
 --
 
 --
+-- AUTO_INCREMENT de la tabla `articulos`
+--
+ALTER TABLE `articulos`
+  MODIFY `id_articulo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `años`
+--
+ALTER TABLE `años`
+  MODIFY `id_año` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT de la tabla `bot`
 --
 ALTER TABLE `bot`
@@ -354,37 +640,43 @@ ALTER TABLE `bot`
 -- AUTO_INCREMENT de la tabla `carrusel`
 --
 ALTER TABLE `carrusel`
-  MODIFY `id_imagen` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_imagen` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `colores`
+--
+ALTER TABLE `colores`
+  MODIFY `id_color` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `contactos`
 --
 ALTER TABLE `contactos`
-  MODIFY `id_contactos` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_contactos` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
--- AUTO_INCREMENT de la tabla `docs_ley_general`
+-- AUTO_INCREMENT de la tabla `documentos`
 --
-ALTER TABLE `docs_ley_general`
-  MODIFY `id_documento` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `documentos`
+  MODIFY `id_documento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT de la tabla `encuestas`
 --
 ALTER TABLE `encuestas`
-  MODIFY `id_encuesta` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_encuesta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `eventos`
 --
 ALTER TABLE `eventos`
-  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT de la tabla `header`
+-- AUTO_INCREMENT de la tabla `fracciones`
 --
-ALTER TABLE `header`
-  MODIFY `id_header` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+ALTER TABLE `fracciones`
+  MODIFY `id_fraccion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `logo`
@@ -396,25 +688,37 @@ ALTER TABLE `logo`
 -- AUTO_INCREMENT de la tabla `noticias`
 --
 ALTER TABLE `noticias`
-  MODIFY `id_noticia` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_noticia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `opcion`
 --
 ALTER TABLE `opcion`
-  MODIFY `id_opcion` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_opcion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT de la tabla `organigrama`
+--
+ALTER TABLE `organigrama`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `preguntas`
 --
 ALTER TABLE `preguntas`
-  MODIFY `id_pregunta` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pregunta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT de la tabla `requisitos`
+--
+ALTER TABLE `requisitos`
+  MODIFY `id_requisito` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `respuesta_abierta`
 --
 ALTER TABLE `respuesta_abierta`
-  MODIFY `id_respuesta_abierta` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_respuesta_abierta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `respuesta_cerrada`
@@ -423,20 +727,39 @@ ALTER TABLE `respuesta_cerrada`
   MODIFY `id_respuesta` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT de la tabla `tramites_servicios`
+--
+ALTER TABLE `tramites_servicios`
+  MODIFY `id_tramite` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT de la tabla `ubicaciones`
 --
 ALTER TABLE `ubicaciones`
-  MODIFY `id_ubicacion` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_ubicacion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Restricciones para tablas volcadas
 --
+
+--
+-- Filtros para la tabla `documentos`
+--
+ALTER TABLE `documentos`
+  ADD CONSTRAINT `documentos_ibfk_1` FOREIGN KEY (`año`) REFERENCES `años` (`año`),
+  ADD CONSTRAINT `documentos_ibfk_2` FOREIGN KEY (`id_fraccion`) REFERENCES `fracciones` (`id_fraccion`);
+
+--
+-- Filtros para la tabla `fracciones`
+--
+ALTER TABLE `fracciones`
+  ADD CONSTRAINT `fracciones_ibfk_1` FOREIGN KEY (`num_articulo`) REFERENCES `articulos` (`num_articulo`);
 
 --
 -- Filtros para la tabla `opcion`
@@ -452,6 +775,12 @@ ALTER TABLE `preguntas`
   ADD CONSTRAINT `preguntas_ibfk_1` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`);
 
 --
+-- Filtros para la tabla `requisitos`
+--
+ALTER TABLE `requisitos`
+  ADD CONSTRAINT `requisitos_ibfk_1` FOREIGN KEY (`id_tramite`) REFERENCES `tramites_servicios` (`id_tramite`);
+
+--
 -- Filtros para la tabla `respuesta_abierta`
 --
 ALTER TABLE `respuesta_abierta`
@@ -465,6 +794,16 @@ ALTER TABLE `respuesta_cerrada`
   ADD CONSTRAINT `respuesta_cerrada_ibfk_1` FOREIGN KEY (`id_opcion`) REFERENCES `opcion` (`id_opcion`),
   ADD CONSTRAINT `respuesta_cerrada_ibfk_2` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`),
   ADD CONSTRAINT `respuesta_cerrada_ibfk_3` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`);
+
+DELIMITER $$
+--
+-- Eventos
+--
+CREATE DEFINER=`root`@`localhost` EVENT `add_new_year_event` ON SCHEDULE EVERY 1 YEAR STARTS '2025-01-01 00:00:00' ON COMPLETION NOT PRESERVE ENABLE DO INSERT INTO años (año)
+  SELECT YEAR(CURDATE()) + 1
+  WHERE NOT EXISTS (SELECT 1 FROM años WHERE año = YEAR(CURDATE()) + 1)$$
+
+DELIMITER ;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
