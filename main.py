@@ -19,13 +19,20 @@ import os
 
 app = FastAPI()
 
-# Configuración de la base de datos
-db_config = {
+# Configuración de la base de datos si esta en la nube 
+# db_config = {
+#     'host': '151.106.97.153',
+#     'user': 'u880599588_test',
+#     'password': 'HCwf9J9a',
+#     'database': 'u880599588_test'
+# }
+# Configuracion de la base de datos si esta de forma local
+db_config ={    
     'host': 'localhost',
     'user': 'root',
     'password': '',
     'database': 'presidencia'
-}
+    }
 
 app.add_middleware(
     CORSMiddleware,
@@ -1775,7 +1782,7 @@ def crear_opcion(opcion:Opciones):
         
         # Verificar si el id_pregunta existe en la tabla encuestas
         query_check_pregunta_1 = "SELECT 1 FROM preguntas WHERE id_pregunta = %s AND pregunta_abierta = %s"
-        cursor.execute(query_check_pregunta_1, (opcion.id_pregunta,1))
+        cursor.execute(query_check_pregunta_1, (opcion.id_pregunta,'1'))
         if cursor.fetchone() is not None:
             raise HTTPException(status_code=404, detail="La pregunta es abierta, porque deberia tener opciones????")
 
