@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 30-05-2024 a las 17:29:55
+-- Tiempo de generación: 05-06-2024 a las 21:08:29
 -- Versión del servidor: 10.4.28-MariaDB
 -- Versión de PHP: 8.2.4
 
@@ -165,10 +165,7 @@ INSERT INTO `documentos` (`id_documento`, `documento`, `trimestre`, `año`, `id_
 (3, 'a69_f45.xlsx', '1', 2024, 3),
 (4, 'a69_f46.xlsx', '1', 2024, 4),
 (5, 'a70_f01_a1.xlsx', '1', 2024, 5),
-(6, 'a70_f01_b1.xlsx', '1', 2024, 6),
-(7, 'a69_f01 (1).xlsx', '1', 2024, 1),
-(8, 'a69_f01 (1).xlsx', '1', 2024, 1),
-(9, 'a69_f01 (1).xlsx', '1', 2024, 1);
+(6, 'a70_f01_b1.xlsx', '1', 2024, 6);
 
 -- --------------------------------------------------------
 
@@ -384,13 +381,6 @@ CREATE TABLE `respuesta_abierta` (
   `respuesta` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Volcado de datos para la tabla `respuesta_abierta`
---
-
-INSERT INTO `respuesta_abierta` (`id_respuesta_abierta`, `id_pregunta`, `id_encuesta`, `respuesta`) VALUES
-(1, 4, 1, 'La verdad que me preocupa mucho el aspecto de algun despido inesperado con el cual tarde mucho en volver a tener algun trabajo estable');
-
 -- --------------------------------------------------------
 
 --
@@ -466,8 +456,10 @@ CREATE TABLE `usuarios` (
 --
 
 INSERT INTO `usuarios` (`id_usuario`, `nombre`, `contrasena`, `area`, `estado`, `permisos`, `salt`) VALUES
-(1, 'Dejah', 'XqZZHydCwwL51F9WBZdy3GP/jEzYGBjx6UObSdd6QRU=', 'Administracion', '1', '1', 'OTsr9S4YM3eEjGRf8q53gg=='),
-(2, 'Bryan', 'K7VKZpBfzZWNKeDYCQ0aYjrXW+Vm4HTYvLIIwSJOWrg=', 'Contraloria', '0', '0', '/ANhFF9gd6iKtL8DFbnojA==');
+(1, 'Dejah', 'nUpVTBeeoqxoRiR2cpc2uOpKhIsdTWWPjD2BPe1W1d8=', 'Comunicacion Social', '1', '1', 'zfrx+0VftIkJZx3i4QzM1w=='),
+(2, 'Brallan', 'e67wUHET79oFU0pryjmAMdZt8y+VW6GCSuN0g4/8QEM=', 'Juventud', '0', '0', 'DRED5pneX+s3thYzKgJgiA=='),
+(4, 'Daniel', 'OxYCs/wvqtIjJbcauWhdp3olOM6AxbDnTHmfskBPfEw=', 'alguna', '0', '', 'kUCmSYDeNTi2FaDZMnCj3Q=='),
+(5, 'David', '6RDOhMG7Ul1pm5QSp/QNH3076IZd68m6TZUjH3iW5CI=', 'Algo', '1', '0', 'dtGj+/cq4imKAOeUtsq8FQ==');
 
 --
 -- Índices para tablas volcadas
@@ -658,7 +650,7 @@ ALTER TABLE `contactos`
 -- AUTO_INCREMENT de la tabla `documentos`
 --
 ALTER TABLE `documentos`
-  MODIFY `id_documento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id_documento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `encuestas`
@@ -718,7 +710,7 @@ ALTER TABLE `requisitos`
 -- AUTO_INCREMENT de la tabla `respuesta_abierta`
 --
 ALTER TABLE `respuesta_abierta`
-  MODIFY `id_respuesta_abierta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_respuesta_abierta` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `respuesta_cerrada`
@@ -742,7 +734,7 @@ ALTER TABLE `ubicaciones`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Restricciones para tablas volcadas
@@ -752,48 +744,48 @@ ALTER TABLE `usuarios`
 -- Filtros para la tabla `documentos`
 --
 ALTER TABLE `documentos`
-  ADD CONSTRAINT `documentos_ibfk_1` FOREIGN KEY (`año`) REFERENCES `años` (`año`),
-  ADD CONSTRAINT `documentos_ibfk_2` FOREIGN KEY (`id_fraccion`) REFERENCES `fracciones` (`id_fraccion`);
+  ADD CONSTRAINT `documentos_ibfk_1` FOREIGN KEY (`año`) REFERENCES `años` (`año`) ON DELETE CASCADE,
+  ADD CONSTRAINT `documentos_ibfk_2` FOREIGN KEY (`id_fraccion`) REFERENCES `fracciones` (`id_fraccion`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `fracciones`
 --
 ALTER TABLE `fracciones`
-  ADD CONSTRAINT `fracciones_ibfk_1` FOREIGN KEY (`num_articulo`) REFERENCES `articulos` (`num_articulo`);
+  ADD CONSTRAINT `fracciones_ibfk_1` FOREIGN KEY (`num_articulo`) REFERENCES `articulos` (`num_articulo`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `opcion`
 --
 ALTER TABLE `opcion`
-  ADD CONSTRAINT `opcion_ibfk_1` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`),
-  ADD CONSTRAINT `opcion_ibfk_2` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`);
+  ADD CONSTRAINT `opcion_ibfk_1` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`) ON DELETE CASCADE,
+  ADD CONSTRAINT `opcion_ibfk_2` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `preguntas`
 --
 ALTER TABLE `preguntas`
-  ADD CONSTRAINT `preguntas_ibfk_1` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`);
+  ADD CONSTRAINT `preguntas_ibfk_1` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `requisitos`
 --
 ALTER TABLE `requisitos`
-  ADD CONSTRAINT `requisitos_ibfk_1` FOREIGN KEY (`id_tramite`) REFERENCES `tramites_servicios` (`id_tramite`);
+  ADD CONSTRAINT `requisitos_ibfk_1` FOREIGN KEY (`id_tramite`) REFERENCES `tramites_servicios` (`id_tramite`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `respuesta_abierta`
 --
 ALTER TABLE `respuesta_abierta`
-  ADD CONSTRAINT `respuesta_abierta_ibfk_1` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`),
-  ADD CONSTRAINT `respuesta_abierta_ibfk_2` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`);
+  ADD CONSTRAINT `respuesta_abierta_ibfk_1` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`) ON DELETE CASCADE,
+  ADD CONSTRAINT `respuesta_abierta_ibfk_2` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `respuesta_cerrada`
 --
 ALTER TABLE `respuesta_cerrada`
-  ADD CONSTRAINT `respuesta_cerrada_ibfk_1` FOREIGN KEY (`id_opcion`) REFERENCES `opcion` (`id_opcion`),
-  ADD CONSTRAINT `respuesta_cerrada_ibfk_2` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`),
-  ADD CONSTRAINT `respuesta_cerrada_ibfk_3` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`);
+  ADD CONSTRAINT `respuesta_cerrada_ibfk_1` FOREIGN KEY (`id_opcion`) REFERENCES `opcion` (`id_opcion`) ON DELETE CASCADE,
+  ADD CONSTRAINT `respuesta_cerrada_ibfk_2` FOREIGN KEY (`id_pregunta`) REFERENCES `preguntas` (`id_pregunta`) ON DELETE CASCADE,
+  ADD CONSTRAINT `respuesta_cerrada_ibfk_3` FOREIGN KEY (`id_encuesta`) REFERENCES `encuestas` (`id_encuesta`) ON DELETE CASCADE;
 
 DELIMITER $$
 --
