@@ -1510,16 +1510,21 @@ def detalle_encuesta(id_encuesta:int):
         connection.close()
 
 @app.post("/encuesta/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear una encuesta", tags=['Encuestas'])
-def crear_encuesta(encuestas:Encuestas):
+def crear_encuesta(encuestas: Encuestas):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
-        # Insertar nuevo evento en la base de datos
+        # Insertar nueva encuesta en la base de datos
         query = "INSERT INTO encuestas (titulo) VALUES (%s)"
-        evento_data = (encuestas.titulo,)
-        cursor.execute(query, evento_data)
+        encuesta_data = (encuestas.titulo,)
+        cursor.execute(query, encuesta_data)
         connection.commit()
+        
+        # Obtener el ID del registro insertado
+        encuesta_id = cursor.lastrowid
+        
         return {
+            'id': encuesta_id,
             'titulo': encuestas.titulo,
         }
     except mysql.connector.Error as err:
@@ -1637,20 +1642,23 @@ def crear_pregunta(pregunta: Preguntas):
         if cursor.fetchone() is None:
             raise HTTPException(status_code=404, detail="La encuesta no existe")
         
+        # Validar los valores de pregunta_abierta y pregunta_cerrada_multiple
         if pregunta.pregunta_abierta not in [0, 1]:
             raise HTTPException(status_code=400, detail="El valor de 'pregunta_abierta' debe ser '0' o '1'")
         if pregunta.pregunta_cerrada_multiple not in [0, 1]:
             raise HTTPException(status_code=400, detail="El valor de 'pregunta_cerrada_multiple' debe ser '0' o '1'")
         
-        pregunta.pregunta_abierta = str(pregunta.pregunta_abierta)
-        pregunta.pregunta_cerrada_multiple = str(pregunta.pregunta_cerrada_multiple)
-
-        # Insertar nuevo evento en la base de datos
+        # Insertar nueva pregunta en la base de datos
         query = "INSERT INTO preguntas (id_encuesta, pregunta, pregunta_abierta, pregunta_cerrada_multiple) VALUES (%s,%s,%s,%s)"
-        evento_data = (pregunta.id_encuesta, pregunta.pregunta, pregunta.pregunta_abierta, pregunta.pregunta_cerrada_multiple)
-        cursor.execute(query, evento_data)
+        pregunta_data = (pregunta.id_encuesta, pregunta.pregunta, pregunta.pregunta_abierta, pregunta.pregunta_cerrada_multiple)
+        cursor.execute(query, pregunta_data)
         connection.commit()
+        
+        # Obtener el ID del registro insertado
+        pregunta_id = cursor.lastrowid
+
         return {
+            'id_pregunta': pregunta_id,
             'id_encuesta': pregunta.id_encuesta,
             'pregunta': pregunta.pregunta,
             'pregunta_abierta': pregunta.pregunta_abierta,
@@ -1663,7 +1671,7 @@ def crear_pregunta(pregunta: Preguntas):
     finally:
         cursor.close()
         connection.close()
-
+        
 @app.put("/pregunta/editar/{id_pregunta}", status_code=status.HTTP_200_OK, summary="Endpoint para editar una pregunta", tags=['Preguntas'])
 def editar_pregunta(pregunta: EditarPregunta, id_pregunta: int):
     connection = mysql.connector.connect(**db_config)

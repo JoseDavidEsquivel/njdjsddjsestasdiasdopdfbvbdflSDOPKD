@@ -124,7 +124,7 @@ CREATE TABLE preguntas (
     pregunta VARCHAR(100),
     pregunta_abierta ENUM('0','1') DEFAULT '0',
     pregunta_cerrada_multiple ENUM('0','1') DEFAULT '0',
-    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
+    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta) ON DELETE CASCADE
 );
 
 -- Inserción de la pregunta
@@ -140,8 +140,8 @@ CREATE TABLE opcion (
     id_pregunta INT,
     id_encuesta INT,
     opcion VARCHAR(100),
-    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta),
-    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
+    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta) ON DELETE CASCADE,
+    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta) ON DELETE CASCADE
 );
 
 INSERT INTO opcion (id_pregunta, id_encuesta, opcion) VALUES
@@ -172,9 +172,9 @@ CREATE TABLE respuesta_cerrada (
     id_opcion INT,
     id_pregunta INT,
     id_encuesta INT,
-    FOREIGN KEY (id_opcion) REFERENCES opcion(id_opcion),
-    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta),
-    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
+    FOREIGN KEY (id_opcion) REFERENCES opcion(id_opcion) ON DELETE CASCADE,
+    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta) ON DELETE CASCADE,
+    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta) ON DELETE CASCADE
 );
 
 -- RESPUESTAS ABIERTAS 
@@ -183,8 +183,8 @@ CREATE TABLE respuesta_abierta (
     id_pregunta INT,
     id_encuesta INT,
     respuesta VARCHAR(200),
-    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta),
-    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta)
+    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta) ON DELETE CASCADE,
+    FOREIGN KEY (id_encuesta) REFERENCES encuestas(id_encuesta) ON DELETE CASCADE
 );
 
 -- CHATBOT 
@@ -214,7 +214,7 @@ CREATE TABLE fracciones(
     descripcion VARCHAR(50),
     area VARCHAR(75),
     num_articulo INT,
-    FOREIGN KEY (num_articulo) REFERENCES articulos(num_articulo)
+    FOREIGN KEY (num_articulo) REFERENCES articulos(num_articulo) ON DELETE CASCADE
 );
 
 INSERT INTO fracciones (fraccion, descripcion, area, num_articulo) VALUES
@@ -257,8 +257,8 @@ CREATE TABLE documentos(
     trimestre ENUM('1','2','3','4'),
     año INT,
     id_fraccion INT,
-    FOREIGN KEY (año) REFERENCES años(año),
-    FOREIGN KEY (id_fraccion) REFERENCES fracciones(id_fraccion)
+    FOREIGN KEY (año) REFERENCES años(año) ON DELETE CASCADE,
+    FOREIGN KEY (id_fraccion) REFERENCES fracciones(id_fraccion) ON DELETE CASCADE
 );
 
 INSERT INTO documentos (documento, trimestre, año, id_fraccion) VALUES
@@ -282,7 +282,7 @@ CREATE TABLE requisitos(
     id_requisito INT AUTO_INCREMENT PRIMARY KEY,
     requisito VARCHAR(200),
     id_tramite INT,
-    FOREIGN KEY (id_tramite) REFERENCES tramites_servicios(id_tramite)
+    FOREIGN KEY (id_tramite) REFERENCES tramites_servicios(id_tramite) ON DELETE CASCADE
 );
 
 INSERT INTO requisitos(requisito, id_tramite) VALUES
