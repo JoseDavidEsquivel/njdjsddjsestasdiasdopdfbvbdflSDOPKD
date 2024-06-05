@@ -2,7 +2,7 @@ CREATE DATABASE presidencia;
 USE presidencia;
 
 
--- USUARIOS (DONE) -------------------------------------------------------
+-- USUARIOS (DONE JS) -------------------------------------------------------
 CREATE TABLE usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL UNIQUE,
@@ -14,7 +14,7 @@ CREATE TABLE usuarios (
 );
 
 
--- PAGINA ---------------------------------------------------------
+-- PAGINA (DONE JS)  ---------------------------------------------------------
 CREATE TABLE logo (
     id_logo INT AUTO_INCREMENT PRIMARY KEY,
     imagen VARCHAR(255) NOT NULL,
@@ -22,9 +22,11 @@ CREATE TABLE logo (
 );
 
 INSERT INTO logo (imagen,ruta) VALUES
-('default_icon.png','static/images/logo/');
+('default_logo.png','static/images/logo/');
 
 
+
+-- COLORES ------------------------------------------------------------------
 CREATE TABLE colores (
     id_color INT AUTO_INCREMENT PRIMARY KEY,
     nombre_color VARCHAR(15) NOT NULL,

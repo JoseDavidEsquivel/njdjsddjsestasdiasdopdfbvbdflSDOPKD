@@ -177,7 +177,7 @@ def verificar_credenciales(nombre: str, contrasena: str):
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
-        query = "SELECT contrasena, salt, permisos, estado FROM usuarios WHERE nombre = %s;"
+        query = "SELECT contrasena, salt, permisos, estado, area FROM usuarios WHERE nombre = %s;"
         cursor.execute(query, (nombre,))
         usuario = cursor.fetchone()
 
@@ -196,9 +196,9 @@ def verificar_credenciales(nombre: str, contrasena: str):
                     return {"mensaje": "Usuario no activo"}
                 else:
                     nivel_permiso = usuario[2]
-                    print
+                    area = usuario[4]
                     rol = 'administrador' if nivel_permiso == '1' else 'director'
-                    return {"mensaje": "Credenciales correctas", "rol": rol}
+                    return {"mensaje": "Credenciales correctas", "rol": rol, "area":area}
             else:
                 return {"mensaje": "Credenciales incorrectas"}
         else:
@@ -222,7 +222,7 @@ def iniciar_sesion(credenciales: Credenciales):
     resultado_verificacion = verificar_credenciales(credenciales.nombre, credenciales.contrasena)
 
     if resultado_verificacion["mensaje"] == "Credenciales correctas":
-        return {"mensaje": "Sesión iniciada", "rol": resultado_verificacion["rol"]}
+        return {"mensaje": "Sesión iniciada", "rol": resultado_verificacion["rol"], "area":resultado_verificacion["area"]}
     elif resultado_verificacion["mensaje"] == "Usuario no activo":
         raise HTTPException(status_code=403, detail="Usuario no activo")
     else:
@@ -492,103 +492,103 @@ async def borrar_logo():
 
     return JSONResponse(content={"message": "Logo borrado y reemplazado por el ícono por defecto"})
 
-@app.get("/header",status_code=status.HTTP_200_OK, summary="Endpoint para listar el header activo de la pagina", tags=['Header'])
-def listar_header():
-    connection = mysql.connector.connect(**db_config)
-    cursor = connection.cursor()
-    try:
-        cursor.execute("SELECT * FROM header")
-        datos = cursor.fetchall()
-        if datos:
-            respuesta = []
-            for row in datos:
-                dato = {
-                    'archivo': row[1],
-                    'ruta': row[2]
-                }
-                respuesta.append(dato)
+# @app.get("/header",status_code=status.HTTP_200_OK, summary="Endpoint para listar el header activo de la pagina", tags=['Header'])
+# def listar_header():
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
+#     try:
+#         cursor.execute("SELECT * FROM header")
+#         datos = cursor.fetchall()
+#         if datos:
+#             respuesta = []
+#             for row in datos:
+#                 dato = {
+#                     'archivo': row[1],
+#                     'ruta': row[2]
+#                 }
+#                 respuesta.append(dato)
             
 
-            return respuesta
-        else:
-            raise HTTPException(status_code=404, detail="No hay un header en la Base de datos")
-    finally:
-        cursor.close()
-        connection.close()
+#             return respuesta
+#         else:
+#             raise HTTPException(status_code=404, detail="No hay un header en la Base de datos")
+#     finally:
+#         cursor.close()
+#         connection.close()
 
-@app.post("/header/subir",status_code=status.HTTP_200_OK, summary="Endpoint para subir un header a la pagina", tags=['Header'])
-async def subir_header(file: UploadFile = File(...)):
-    # Comprobar la extensión del archivo
-    connection = mysql.connector.connect(**db_config)
-    cursor = connection.cursor()
+# @app.post("/header/subir",status_code=status.HTTP_200_OK, summary="Endpoint para subir un header a la pagina", tags=['Header'])
+# async def subir_header(file: UploadFile = File(...)):
+#     # Comprobar la extensión del archivo
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
 
-    if not file.filename.lower().endswith(".png"):
-        raise HTTPException(status_code=400, detail="Solo se permiten archivos con extension .png")
+#     if not file.filename.lower().endswith(".png"):
+#         raise HTTPException(status_code=400, detail="Solo se permiten archivos con extension .png")
 
-    # Guardar temporalmente el archivo
-    file_location = f"static/temp/{file.filename}"
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+#     # Guardar temporalmente el archivo
+#     file_location = f"static/temp/{file.filename}"
+#     with open(file_location, "wb") as buffer:
+#         shutil.copyfileobj(file.file, buffer)
 
-    # Abrir la imagen y comprobar el tamaño
-    try:
-        with Image.open(file_location) as img:
-            if img.size < (200, 200):
-                raise HTTPException(status_code=400, detail="El header tiene que ser mayor a 200x200")
-            elif img.size > (1500, 1500):
-                raise HTTPException(status_code=400, detail="El header tiene que ser menor a 1500x1500")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid image file")
+#     # Abrir la imagen y comprobar el tamaño
+#     try:
+#         with Image.open(file_location) as img:
+#             if img.size < (200, 200):
+#                 raise HTTPException(status_code=400, detail="El header tiene que ser mayor a 200x200")
+#             elif img.size > (1500, 1500):
+#                 raise HTTPException(status_code=400, detail="El header tiene que ser menor a 1500x1500")
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail="Invalid image file")
 
-    # Mover el archivo al directorio final si pasa las validaciones
-    final_location = f"static/images/headers/{file.filename}" # Ubicacion del archivo
-    shutil.move(file_location, final_location)
+#     # Mover el archivo al directorio final si pasa las validaciones
+#     final_location = f"static/images/headers/{file.filename}" # Ubicacion del archivo
+#     shutil.move(file_location, final_location)
 
-    query = """
-            UPDATE header
-            SET imagen = %s, ruta = %s
-            WHERE id_header = 1
-        """
-    usuario_data = (file.filename,"static/images/header/")
-    cursor.execute(query, usuario_data)
-    connection.commit()
+#     query = """
+#             UPDATE header
+#             SET imagen = %s, ruta = %s
+#             WHERE id_header = 1
+#         """
+#     usuario_data = (file.filename,"static/images/header/")
+#     cursor.execute(query, usuario_data)
+#     connection.commit()
 
-    return JSONResponse(content={"filename": file.filename})
+#     return JSONResponse(content={"filename": file.filename})
 
-@app.post("/header/borrar", status_code=status.HTTP_200_OK, summary="Endpoint para borrar el header actual", tags=['Header'])
-async def borrar_header():
-    connection = mysql.connector.connect(**db_config)
-    cursor = connection.cursor()
+# @app.post("/header/borrar", status_code=status.HTTP_200_OK, summary="Endpoint para borrar el header actual", tags=['Header'])
+# async def borrar_header():
+#     connection = mysql.connector.connect(**db_config)
+#     cursor = connection.cursor()
 
-    # Obtener el nombre del archivo actual
-    cursor.execute("SELECT imagen FROM header WHERE id_header = 1")
-    result = cursor.fetchone()
-    if result is None:
-        raise HTTPException(status_code=404, detail="Header no encontrado")
+#     # Obtener el nombre del archivo actual
+#     cursor.execute("SELECT imagen FROM header WHERE id_header = 1")
+#     result = cursor.fetchone()
+#     if result is None:
+#         raise HTTPException(status_code=404, detail="Header no encontrado")
 
-    current_filename = result[0]
-    default_filename = "default_header.png"
-    default_path = "static/images/header/"
+#     current_filename = result[0]
+#     default_filename = "default_header.png"
+#     default_path = "static/images/header/"
 
-    # Actualizar la base de datos con el nombre del archivo por defecto
-    query = """
-            UPDATE header
-            SET imagen = %s, ruta = %s
-            WHERE id_header = 1
-        """
-    cursor.execute(query, (default_filename, default_path))
-    connection.commit()
+#     # Actualizar la base de datos con el nombre del archivo por defecto
+#     query = """
+#             UPDATE header
+#             SET imagen = %s, ruta = %s
+#             WHERE id_header = 1
+#         """
+#     cursor.execute(query, (default_filename, default_path))
+#     connection.commit()
 
-    # Borrar el archivo físico si no es el archivo por defecto
-    if current_filename != default_filename:
-        current_file_path = os.path.join(default_path, current_filename)
-        if os.path.exists(current_file_path):
-            os.remove(current_file_path)
+#     # Borrar el archivo físico si no es el archivo por defecto
+#     if current_filename != default_filename:
+#         current_file_path = os.path.join(default_path, current_filename)
+#         if os.path.exists(current_file_path):
+#             os.remove(current_file_path)
 
-    cursor.close()
-    connection.close()
+#     cursor.close()
+#     connection.close()
 
-    return JSONResponse(content={"message": "Header borrado y reemplazado por el header por defecto"})
+#     return JSONResponse(content={"message": "Header borrado y reemplazado por el header por defecto"})
 
 @app.get("/avisos",status_code=status.HTTP_200_OK, summary="Endpoint para listar los avisos de la pagina", tags=['Carrusel'])
 def listar_avisos():
@@ -2438,120 +2438,6 @@ def borrar_año(id_año: int):
     connection.commit()
 
     return JSONResponse(content={"message": "Año borrado correctamente", "id_año": id_año})
-
-# @app.get("/trimestre",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los trimestres existentes", tags=['Trimestres'])
-# def listar_trimestres():
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
-#     try:
-#         cursor.execute("SELECT * FROM trimestres")
-#         datos = cursor.fetchall()
-#         if datos:
-#             respuesta = []
-#             for row in datos:
-#                 dato = {
-#                     'id_trimestre':row[0],
-#                     'trimestre':row[1],
-#                     'id_año': row[2]
-#                 }
-#                 respuesta.append(dato)
-            
-#             return respuesta
-#         else:
-#             raise HTTPException(status_code=404, detail="No hay trimestres en la Base de datos")
-#     finally:
-#         cursor.close()
-#         connection.close()
-
-# @app.get("/trimestre/{id_trimestre}",status_code=status.HTTP_200_OK, summary="Endpoint para buscar trimestre en la bd", tags=['Trimestres'])
-# def detalle_trimestre(id_trimestre:int):
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
-#     try:
-#         query = "SELECT * FROM trimestres WHERE id_trimestre = %s"
-#         cursor.execute(query, (id_trimestre,))
-#         datos = cursor.fetchall()
-#         if datos:
-#             respuesta = []
-#             for row in datos:
-#                 dato = {
-#                     'id_trimestre':row[0],
-#                     'trimestre':row[1],
-#                     'id_año': row[2]
-#                 }
-#                 respuesta.append(dato)
-
-#             return respuesta
-#         else:
-#             raise HTTPException(status_code=404, detail="No existe un trimestre con ese id en la Base de datos")
-#     finally:
-#         cursor.close()
-#         connection.close()
-
-# @app.post("/trimestre/crear", status_code=status.HTTP_200_OK, summary="Endpoint para crear un trimestre", tags=['Trimestres'])
-# def crear_trimestre(trimestre:Trimestre):
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
-#     try:
-#         # Insertar una respesta cerrada en la base de datos
-#         query = "INSERT INTO trimestres (trimestre, id_año) VALUES (%s, %s)"
-#         evento_data = (trimestre.trimestre, trimestre.id_año)
-#         cursor.execute(query, evento_data)
-#         connection.commit()
-#         return {
-#             'trimestre': trimestre.trimestre,
-#             'id_año': trimestre.id_año
-#         }
-#     except mysql.connector.Error as err:
-#         # Manejar errores de la base de datos
-#         print(f"Error al insertar trimestre en la base de datos: {err}")
-#         raise HTTPException(status_code=500, detail="Error interno al crear trimestre")
-#     finally:
-#         cursor.close()
-#         connection.close()
-
-# @app.put("/trimestre/editar/{id_trimestre}", status_code=status.HTTP_200_OK, summary="Endpoint para editar un trimestre", tags=['Trimestres'])
-# def editar_trimestre(trimestre:Trimestre, id_trimestre: int):
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
-#     try:
-#         # Actualizar respuesta abierta en la base de datos
-#         query = "UPDATE trimestres SET trimestre = %s, id_año = %s WHERE id_trimestre = %s"
-#         evento_data = (trimestre.trimestre, trimestre.id_año, id_trimestre)
-#         cursor.execute(query, evento_data)
-#         connection.commit()
-#         return {
-#             'id_trimestre':id_trimestre,
-#             'trimestre': trimestre.trimestre,
-#             'id_año': trimestre.id_año
-#         }
-#     except mysql.connector.Error as err:
-#         # Manejar errores de la base de datos
-#         print(f"Error al actualizar el trimestre en la base de datos: {err}")
-#         raise HTTPException(status_code=500, detail="Error interno al actualizar trimestre")
-#     finally:
-#         cursor.close()
-#         connection.close()
-
-# @app.delete("/trimestre/borrar/{id_trimestre}", status_code=status.HTTP_200_OK, summary="Endpoint para borrar un trimestre", tags=['Trimestres'])
-# def borrar_trimestre(id_trimestre: int):
-#     # Conectar a la base de datos
-#     connection = mysql.connector.connect(**db_config)
-#     cursor = connection.cursor()
-
-#     # Verificar si la repuesta existe
-#     cursor.execute("SELECT * FROM trimestres WHERE id_trimestre =%s", (id_trimestre,))
-#     aviso = cursor.fetchone()
-    
-#     if not aviso:
-#         raise HTTPException(status_code=404, detail="Trimestre no encontrado")
-
-#     # Eliminar el aviso de la base de datos
-#     cursor.execute("DELETE FROM trimestres WHERE id_trimestre =%s", (id_trimestre,))
-#     connection.commit()
-
-#     return JSONResponse(content={"message": "Trimestre borrado correctamente", "id_trimestre": id_trimestre})
-
 
 @app.get("/documento",status_code=status.HTTP_200_OK, summary="Endpoint para listar todos los documentos existentes", tags=['Documentos'])
 def listar_documentos():
