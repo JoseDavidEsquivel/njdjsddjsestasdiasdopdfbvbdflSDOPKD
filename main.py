@@ -182,7 +182,7 @@ def generar_contrasena_salt (contrasena):
 # Función para verificar las credenciales
 def verificar_credenciales(nombre: str, contrasena: str):
     # Clave secreta para firmar los tokens JWT
-    SECRET_KEY = "Aguante_el_United"
+    SECRET_KEY = "MEXICO_0-4_URUGUAY" # MAFUFADA DE SELECCION
 
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
