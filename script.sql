@@ -9,7 +9,7 @@ CREATE TABLE usuarios (
     contrasena VARCHAR(255) NOT NULL,
     area VARCHAR(70) NOT NULL,
     estado ENUM('0', '1') DEFAULT '1',
-    permisos ENUM('0', '1') DEFAULT '0',
+    permisos ENUM('0', '1','2') DEFAULT '0',
     salt VARCHAR(255) NOT NULL
 );
 

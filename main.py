@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from datetime import date, time
 from typing import Optional, List
 import mysql.connector
+import jwt
+import datetime
 
 # Librerias para imagenes
 from PIL import Image
@@ -155,6 +157,11 @@ class Color(BaseModel):
 
 app.mount("/static", StaticFiles(directory="static"),name="static")
 
+# Endpoint raiz
+@app.get("/", status_code=status.HTTP_200_OK, summary="Endpoint raiz", tags=['Root'])
+def root():
+    return {'root'}
+
 # funciones extra
 def generar_contrasena_salt (contrasena):
 
@@ -174,6 +181,9 @@ def generar_contrasena_salt (contrasena):
 
 # Función para verificar las credenciales
 def verificar_credenciales(nombre: str, contrasena: str):
+    # Clave secreta para firmar los tokens JWT
+    SECRET_KEY = "Aguante_el_United"
+
     connection = mysql.connector.connect(**db_config)
     cursor = connection.cursor()
     try:
@@ -197,8 +207,22 @@ def verificar_credenciales(nombre: str, contrasena: str):
                 else:
                     nivel_permiso = usuario[2]
                     area = usuario[4]
-                    rol = 'administrador' if nivel_permiso == '1' else 'director'
-                    return {"mensaje": "Credenciales correctas", "rol": rol, "area":area}
+                    if nivel_permiso == '0':
+                        rol = 'director'
+                    elif nivel_permiso == '1':
+                        rol = 'administrador'
+                    else:
+                        rol = 'director de documentos'
+                    
+                    # Generar el token JWT
+                    token = jwt.encode({
+                        'nombre': nombre,
+                        'rol': rol,
+                        'area': area,
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+                    }, SECRET_KEY, algorithm='HS256')
+
+                    return {"mensaje": "Credenciales correctas", "rol": rol, "area": area, "token": token}
             else:
                 return {"mensaje": "Credenciales incorrectas"}
         else:
@@ -210,24 +234,22 @@ def verificar_credenciales(nombre: str, contrasena: str):
         cursor.close()
         connection.close()
 
-
-# Endpoint raiz
-@app.get("/", status_code=status.HTTP_200_OK, summary="Endpoint raiz", tags=['Root'])
-def root():
-    return {'root'}
-
 # Endpoint para iniciar sesión
 @app.post("/login", status_code=status.HTTP_200_OK, summary="Endpoint para iniciar sesión", tags=['Login'])
 def iniciar_sesion(credenciales: Credenciales):
     resultado_verificacion = verificar_credenciales(credenciales.nombre, credenciales.contrasena)
 
     if resultado_verificacion["mensaje"] == "Credenciales correctas":
-        return {"mensaje": "Sesión iniciada", "rol": resultado_verificacion["rol"], "area":resultado_verificacion["area"]}
+        return {
+            "mensaje": "Sesión iniciada",
+            "rol": resultado_verificacion["rol"],
+            "area": resultado_verificacion["area"],
+            "token": resultado_verificacion["token"]
+        }
     elif resultado_verificacion["mensaje"] == "Usuario no activo":
         raise HTTPException(status_code=403, detail="Usuario no activo")
     else:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-
 # Para el modulo de Usuarios
 # Listar todos los usuarios (sin la contraseña)
 @app.get("/usuario", status_code=status.HTTP_200_OK, summary="Endpoint para listar datos de usuarios", tags=['Usuario'])
@@ -295,9 +317,9 @@ def crear_usuario(usuario: Usuario):
     try:
         # Validar valores de estado y permisos
         if usuario.estado not in [0, 1]:
-            raise HTTPException(status_code=400, detail="El valor de 'estado' debe ser '0' o '1'")
-        if usuario.permisos not in [0, 1]:
-            raise HTTPException(status_code=400, detail="El valor de 'permisos' debe ser '0' o '1'")
+            raise HTTPException(status_code=400, detail="El valor de 'estado' debe ser '0', '1'")
+        if usuario.permisos not in [0, 1, 2]:
+            raise HTTPException(status_code=400, detail="El valor de 'permisos' debe ser '0', '1' o '2'")
         
         usuario.estado = str(usuario.estado) # Convertimos a str el estado y permisos para que no tome como posicion el valor
         usuario.permisos = str(usuario.permisos) # si no como el valor representado}
@@ -333,8 +355,8 @@ def editar_usuario(id_usuario: int, usuario: Usuario):
         # Validar valores de estado y permisos
         if usuario.estado not in [0, 1]:
             raise HTTPException(status_code=400, detail="El valor de 'estado' debe ser '0' o '1'")
-        if usuario.permisos not in [0, 1]:
-            raise HTTPException(status_code=400, detail="El valor de 'permisos' debe ser '0' o '1'")
+        if usuario.permisos not in [0, 1, 2]:
+            raise HTTPException(status_code=400, detail="El valor de 'permisos' debe ser '0', '1' o '2'")
         
         usuario.estado = str(usuario.estado) # Convertimos a str el estado y permisos para que no tome como posicion el valor
         usuario.permisos = str(usuario.permisos) # si no como el valor representado
