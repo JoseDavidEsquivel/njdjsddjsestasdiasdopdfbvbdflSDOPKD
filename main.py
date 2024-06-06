@@ -208,11 +208,11 @@ def verificar_credenciales(nombre: str, contrasena: str):
                     nivel_permiso = usuario[2]
                     area = usuario[4]
                     if nivel_permiso == '0':
-                        rol = 'director'
+                        rol = 'director transparencia'
                     elif nivel_permiso == '1':
                         rol = 'administrador'
                     else:
-                        rol = 'director de documentos'
+                        rol = 'director area'
                     
                     # Generar el token JWT
                     token = jwt.encode({
