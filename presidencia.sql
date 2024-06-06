@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-06-2024 a las 21:08:29
+-- Tiempo de generación: 06-06-2024 a las 19:35:08
 -- Versión del servidor: 10.4.28-MariaDB
 -- Versión de PHP: 8.2.4
 
@@ -94,9 +94,9 @@ CREATE TABLE `carrusel` (
 --
 
 INSERT INTO `carrusel` (`id_imagen`, `imagen`, `ruta`, `estado`, `url`) VALUES
-(1, 'imagen.png', 'static/images/carrusel', '1', 'ejemplo.com'),
-(2, 'imagen.png', 'static/images/carrusel', '0', 'ejemploinactivo.com'),
-(3, 'imagen2.png', 'static/images/carrusel', '1', 'ejemploactivo.com');
+(2, 'default.png', 'static/images/carrusel/', '0', 'ejemploinactivo.com'),
+(4, 'logo_santiago.png', 'static/images/carrusel/', '0', 'eldiablo.com'),
+(6, 'logo_santiago.png', 'static/images/carrusel/', '1', 'nm');
 
 -- --------------------------------------------------------
 
@@ -249,7 +249,7 @@ CREATE TABLE `logo` (
 --
 
 INSERT INTO `logo` (`id_logo`, `imagen`, `ruta`) VALUES
-(1, 'default_icon.png', 'static/images/logo/');
+(1, 'logo_santiago.png', 'static/images/logos/');
 
 -- --------------------------------------------------------
 
@@ -271,7 +271,8 @@ CREATE TABLE `noticias` (
 
 INSERT INTO `noticias` (`id_noticia`, `titulo`, `contenido`, `imagen`, `ruta`) VALUES
 (1, 'Reportan disparos vs alcadia de tlanchinol', 'Segun los informes preliminares, un grupo armado, a bordo de camionetas, disparo contra el inmueble, causando daños en las instalaciones', 'imagen.png', '/static/images/noticias'),
-(2, 'HOSPITAL en doxey, listo antes de que amlo se vaya', 'Julio Menchaca Salazar, gobernador de Hiladgo, aseguro que el presidente de la Republica le ha encargado que el hosputal de especialidades del instituto Mexicano del Seguro Social.', 'imagen.png', '/static/images/noticias');
+(2, 'HOSPITAL en doxey, listo antes de que amlo se vaya', 'Julio Menchaca Salazar, gobernador de Hiladgo, aseguro que el presidente de la Republica le ha encargado que el hosputal de especialidades del instituto Mexicano del Seguro Social.', 'imagen.png', '/static/images/noticias'),
+(3, 'Se muere AMLO', 'Lorem Ipsum', 'result.png', 'static/images/noticias/');
 
 -- --------------------------------------------------------
 
@@ -433,7 +434,7 @@ CREATE TABLE `ubicaciones` (
 INSERT INTO `ubicaciones` (`id_ubicacion`, `latitud`, `longitud`, `lugar`) VALUES
 (1, 20.03850760, -98.35464950, 'Presidencia de Santiago'),
 (2, 22.04895730, -97.93843480, 'Tu casa'),
-(3, 21.87454580, -98.26487240, 'La tienda');
+(4, 0.00000000, 0.00000000, 'string');
 
 -- --------------------------------------------------------
 
@@ -447,7 +448,7 @@ CREATE TABLE `usuarios` (
   `contrasena` varchar(255) NOT NULL,
   `area` varchar(70) NOT NULL,
   `estado` enum('0','1') DEFAULT '1',
-  `permisos` enum('0','1') DEFAULT '0',
+  `permisos` enum('0','1','2') DEFAULT '0',
   `salt` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -457,9 +458,11 @@ CREATE TABLE `usuarios` (
 
 INSERT INTO `usuarios` (`id_usuario`, `nombre`, `contrasena`, `area`, `estado`, `permisos`, `salt`) VALUES
 (1, 'Dejah', 'nUpVTBeeoqxoRiR2cpc2uOpKhIsdTWWPjD2BPe1W1d8=', 'Comunicacion Social', '1', '1', 'zfrx+0VftIkJZx3i4QzM1w=='),
-(2, 'Brallan', 'e67wUHET79oFU0pryjmAMdZt8y+VW6GCSuN0g4/8QEM=', 'Juventud', '0', '0', 'DRED5pneX+s3thYzKgJgiA=='),
-(4, 'Daniel', 'OxYCs/wvqtIjJbcauWhdp3olOM6AxbDnTHmfskBPfEw=', 'alguna', '0', '', 'kUCmSYDeNTi2FaDZMnCj3Q=='),
-(5, 'David', '6RDOhMG7Ul1pm5QSp/QNH3076IZd68m6TZUjH3iW5CI=', 'Algo', '1', '0', 'dtGj+/cq4imKAOeUtsq8FQ==');
+(2, 'Brallan', 'Nmi9GPcFwFHlKKsauJbOLxGQYPUq/cpZTMJFaJcb76A=', 'Juventud', '1', '1', 'nAxWd4IqbiBrsJ18ztUvnA=='),
+(5, 'David', '6RDOhMG7Ul1pm5QSp/QNH3076IZd68m6TZUjH3iW5CI=', 'Algo', '1', '0', 'dtGj+/cq4imKAOeUtsq8FQ=='),
+(6, 'Diego', 'ibBhBkQ+xLA8y11369CEckEYLFW8pmJSU/HG8VvqN4s=', 'Juventud', '0', '1', 'NGPtJL38vsqOgGl+j4rwfQ=='),
+(7, 'Karla', 'amTs3A2unChoanNYPW8T+XS5Q8Ajg+rk4qCCK8ppydM=', 'Transparencia', '0', '2', 'u51ZbZaGCgAopcc+5OuXkA=='),
+(8, 'Esmeralda', 'kaOv9bsPSXJAh6En7ccFtc8ksRoAoNrKD3x39NobEVM=', 'Algo', '1', '2', 'GJGWyDbu1/UZZPuXvOsJuQ==');
 
 --
 -- Índices para tablas volcadas
@@ -632,13 +635,13 @@ ALTER TABLE `bot`
 -- AUTO_INCREMENT de la tabla `carrusel`
 --
 ALTER TABLE `carrusel`
-  MODIFY `id_imagen` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_imagen` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `colores`
 --
 ALTER TABLE `colores`
-  MODIFY `id_color` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_color` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `contactos`
@@ -680,7 +683,7 @@ ALTER TABLE `logo`
 -- AUTO_INCREMENT de la tabla `noticias`
 --
 ALTER TABLE `noticias`
-  MODIFY `id_noticia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_noticia` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `opcion`
@@ -728,13 +731,13 @@ ALTER TABLE `tramites_servicios`
 -- AUTO_INCREMENT de la tabla `ubicaciones`
 --
 ALTER TABLE `ubicaciones`
-  MODIFY `id_ubicacion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_ubicacion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Restricciones para tablas volcadas
