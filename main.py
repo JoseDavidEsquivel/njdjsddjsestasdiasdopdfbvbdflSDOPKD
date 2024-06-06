@@ -2198,7 +2198,7 @@ def crear_articulo(articulo:Articulo):
     try:
         # Insertar una respesta cerrada en la base de datos
         query = "INSERT INTO articulos (num_articulo) VALUES (%s)"
-        evento_data = (articulo.num_articulo)
+        evento_data = (articulo.num_articulo, )
         cursor.execute(query, evento_data)
         connection.commit()
         return {
