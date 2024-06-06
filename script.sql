@@ -14,7 +14,7 @@ CREATE TABLE usuarios (
 );
 
 
--- PAGINA (DONE JS)  ---------------------------------------------------------
+-- PAGINA (DONE JS) ---------------------------------------------------------
 CREATE TABLE logo (
     id_logo INT AUTO_INCREMENT PRIMARY KEY,
     imagen VARCHAR(255) NOT NULL,
@@ -26,7 +26,7 @@ INSERT INTO logo (imagen,ruta) VALUES
 
 
 
--- COLORES ------------------------------------------------------------------
+-- COLORES (DONE JS) ------------------------------------------------------------------
 CREATE TABLE colores (
     id_color INT AUTO_INCREMENT PRIMARY KEY,
     nombre_color VARCHAR(15) NOT NULL,
@@ -47,6 +47,8 @@ INSERT INTO colores (nombre_color, valor_hex) VALUES
 -- INSERT INTO header (imagen,ruta) VALUES
 -- ('default_header.png','static/images/header/');
 
+
+-- CARRUSEL (DONE JS) --------------------------------
 CREATE TABLE carrusel (
     id_imagen INT AUTO_INCREMENT PRIMARY KEY,
     imagen VARCHAR(255) NOT NULL,
@@ -60,7 +62,7 @@ INSERT INTO carrusel (imagen, ruta, estado, url) VALUES
 ('imagen.png','static/images/carrusel','0','ejemploinactivo.com'),
 ('imagen2.png','static/images/carrusel','1','ejemploactivo.com');
 
-
+-- UBICACIONES (DONE JS) ------
 CREATE TABLE ubicaciones (
     id_ubicacion INT AUTO_INCREMENT PRIMARY KEY,
     latitud DECIMAL(10, 8),
@@ -72,6 +74,8 @@ INSERT INTO ubicaciones (latitud,longitud,lugar) VALUES
 (20.0385076,-98.3546495,'Presidencia de Santiago'),
 (22.0489573,-97.9384348,'Tu casa'),
 (21.8745458,-98.2648724,'La tienda');
+
+
 
 CREATE TABLE contactos (
     id_contactos INT AUTO_INCREMENT PRIMARY KEY,
@@ -85,7 +89,7 @@ INSERT INTO contactos (nombre_institucion, tipo_contacto, contacto, horario) VAL
 ('Presidencia Municipal','telefono','01(775)7532914, 15, 16 Ext, 101 ','Horario de 8:30 AM a 4:30 PM'),
 ('Agua Potable','telefono','01(775)7546459','Horario de 8:30 AM a 4:30 PM');
 
--- NOTICIAS ---------------------------------------------------------
+-- NOTICIAS (DONE JS) ---------------------------------------------------------
 CREATE TABLE noticias (
     id_noticia INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(100),
@@ -98,7 +102,7 @@ INSERT INTO noticias (titulo, contenido, imagen, ruta) VALUES
 ('Reportan disparos vs alcadia de tlanchinol','Segun los informes preliminares, un grupo armado, a bordo de camionetas, disparo contra el inmueble, causando daños en las instalaciones','imagen.png','/static/images/noticias'),
 ('HOSPITAL en doxey, listo antes de que amlo se vaya','Julio Menchaca Salazar, gobernador de Hiladgo, aseguro que el presidente de la Republica le ha encargado que el hosputal de especialidades del instituto Mexicano del Seguro Social.','imagen.png','/static/images/noticias');
 
--- EVENTOS -- (CALENDARIO)-------------------------------------------------------
+-- EVENTOS -- (CALENDARIO) (DONE JS) -------------------------------------------------------
 CREATE TABLE eventos (
     id_evento INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(50),

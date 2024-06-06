@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, status, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, status, File, UploadFile, Form, Path, Query
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -2301,6 +2301,50 @@ def detalle_fraccion(id_fraccion:int):
             return respuesta
         else:
             raise HTTPException(status_code=404, detail="No existe una fraccion con ese id en la Base de datos")
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.get("/fracciones/busqueda", status_code=status.HTTP_200_OK, summary="Buscar fracciones por área y/o número de artículo", tags=['Fracciones'])
+def buscar_fracciones(area: str = Query(None, description="Nombre del área a buscar"), num_articulo: str = Query(None, description="Número del artículo a buscar")):
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor()
+
+    # Contruir la consulta SQL dinámicamente según los parámetros proporcionados
+    base_query = "SELECT * FROM fracciones WHERE"
+    conditions = []
+    parameters = []
+
+    if area:
+        conditions.append(" area = %s")
+        parameters.append(area)
+
+    if num_articulo:
+        conditions.append(" num_articulo = %s")
+        parameters.append(num_articulo)
+
+    # Verifica que al menos un parámetro haya sido proporcionado
+    if not conditions:
+        raise HTTPException(status_code=400, detail="Debe proporcionar al menos un parámetro de búsqueda")
+
+    query = base_query + " AND".join(conditions)
+    try:
+        cursor.execute(query, parameters)
+        datos = cursor.fetchall()
+        if datos:
+            respuesta = []
+            for row in datos:
+                dato = {
+                    'id_fraccion': row[0],
+                    'fraccion': row[1],
+                    'descripcion': row[2],
+                    'area': row[3],
+                    'num_articulo': row[4]
+                }
+                respuesta.append(dato)
+            return respuesta
+        else:
+            raise HTTPException(status_code=404, detail="No se encontraron fracciones con los criterios especificados")
     finally:
         cursor.close()
         connection.close()
