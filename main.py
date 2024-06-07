@@ -2518,9 +2518,10 @@ def listar_documentos():
                 dato = {
                     'id_documento':row[0],
                     'documento':row[1],
-                    'trimestre': row[2],
-                    'año':row[3],
-                    'id_fraccion':row[4]
+                    'ruta':row[2],
+                    'trimestre': row[3],
+                    'año':row[4],
+                    'id_fraccion':row[5]
                 }
                 respuesta.append(dato)
             
@@ -2545,9 +2546,10 @@ def detalle_documento(id_documento:int):
                 dato = {
                     'id_documento':row[0],
                     'documento':row[1],
-                    'trimestre': row[2],
-                    'año':row[3],
-                    'id_fraccion':row[4]
+                    'ruta':row[2],
+                    'trimestre': row[3],
+                    'año':row[4],
+                    'id_fraccion':row[5]
                 }
                 respuesta.append(dato)
 
@@ -2591,13 +2593,14 @@ async def crear_documento(
             f.write(await file.read())
 
         # Insertar documento en la base de datos
-        query = "INSERT INTO documentos (documento, trimestre, año, id_fraccion) VALUES (%s, %s, %s, %s)"
-        evento_data = (file.filename, trimestre, año, id_fraccion)
+        query = "INSERT INTO documentos (documento, ruta, trimestre, año, id_fraccion) VALUES (%s, %s ,%s, %s, %s)"
+        evento_data = (file.filename, directory, trimestre, año, id_fraccion)
         cursor.execute(query, evento_data)
         connection.commit()
         return {
             'id_documento': cursor.lastrowid,
             'documento': file.filename,
+            'ruta': directory,
             'trimestre': trimestre,
             'año': año,
             'id_fraccion': id_fraccion,

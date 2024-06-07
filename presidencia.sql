@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 06-06-2024 a las 19:35:08
+-- Tiempo de generación: 07-06-2024 a las 17:33:26
 -- Versión del servidor: 10.4.28-MariaDB
 -- Versión de PHP: 8.2.4
 
@@ -37,6 +37,7 @@ CREATE TABLE `articulos` (
 --
 
 INSERT INTO `articulos` (`id_articulo`, `num_articulo`) VALUES
+(4, 2),
 (1, 69),
 (2, 70);
 
@@ -150,6 +151,7 @@ INSERT INTO `contactos` (`id_contactos`, `nombre_institucion`, `tipo_contacto`, 
 CREATE TABLE `documentos` (
   `id_documento` int(11) NOT NULL,
   `documento` varchar(200) DEFAULT NULL,
+  `ruta` varchar(100) DEFAULT NULL,
   `trimestre` enum('1','2','3','4') DEFAULT NULL,
   `año` int(11) DEFAULT NULL,
   `id_fraccion` int(11) DEFAULT NULL
@@ -159,13 +161,8 @@ CREATE TABLE `documentos` (
 -- Volcado de datos para la tabla `documentos`
 --
 
-INSERT INTO `documentos` (`id_documento`, `documento`, `trimestre`, `año`, `id_fraccion`) VALUES
-(1, 'a69_f01.xlsx', '1', 2024, 1),
-(2, 'a69_f02.xlsx', '1', 2024, 2),
-(3, 'a69_f45.xlsx', '1', 2024, 3),
-(4, 'a69_f46.xlsx', '1', 2024, 4),
-(5, 'a70_f01_a1.xlsx', '1', 2024, 5),
-(6, 'a70_f01_b1.xlsx', '1', 2024, 6);
+INSERT INTO `documentos` (`id_documento`, `documento`, `ruta`, `trimestre`, `año`, `id_fraccion`) VALUES
+(2, 'Checklist de metodos de la API.xlsx', 'static/documents/transparencia/69/2/2022', '2', 2022, 2);
 
 -- --------------------------------------------------------
 
@@ -204,7 +201,8 @@ CREATE TABLE `eventos` (
 --
 
 INSERT INTO `eventos` (`id_evento`, `titulo`, `descripcion`, `fecha`, `hora`) VALUES
-(1, 'Feria de Santiago Tulantepec', 'Feria de Santiago Tulantepec', '2024-06-14', '00:00:00');
+(1, 'Feria de Santiago Tulantepec', 'Feria de Santiago Tulantepec', '2024-06-14', '00:00:00'),
+(3, 'string', 'string', '2024-06-06', '20:58:22');
 
 -- --------------------------------------------------------
 
@@ -230,7 +228,8 @@ INSERT INTO `fracciones` (`id_fraccion`, `fraccion`, `descripcion`, `area`, `num
 (3, '45', 'Catalogo y guia de archivos', 'Informatica', 69),
 (4, '46', 'Sesiones organos consultivos', 'Secretario', 69),
 (5, '1: A)', 'Plan de desarrollo', 'Innovacion', 70),
-(6, '1: B)', 'Presupuesto de egresos', 'Contador', 70);
+(6, '1: B)', 'Presupuesto de egresos', 'Contador', 70),
+(8, '666', 'el diablo', 'satan', 69);
 
 -- --------------------------------------------------------
 
@@ -271,8 +270,7 @@ CREATE TABLE `noticias` (
 
 INSERT INTO `noticias` (`id_noticia`, `titulo`, `contenido`, `imagen`, `ruta`) VALUES
 (1, 'Reportan disparos vs alcadia de tlanchinol', 'Segun los informes preliminares, un grupo armado, a bordo de camionetas, disparo contra el inmueble, causando daños en las instalaciones', 'imagen.png', '/static/images/noticias'),
-(2, 'HOSPITAL en doxey, listo antes de que amlo se vaya', 'Julio Menchaca Salazar, gobernador de Hiladgo, aseguro que el presidente de la Republica le ha encargado que el hosputal de especialidades del instituto Mexicano del Seguro Social.', 'imagen.png', '/static/images/noticias'),
-(3, 'Se muere AMLO', 'Lorem Ipsum', 'result.png', 'static/images/noticias/');
+(2, 'HOSPITAL en doxey, listo antes de que amlo se vaya', 'Julio Menchaca Salazar, gobernador de Hiladgo, aseguro que el presidente de la Republica le ha encargado que el hosputal de especialidades del instituto Mexicano del Seguro Social.', 'imagen.png', '/static/images/noticias');
 
 -- --------------------------------------------------------
 
@@ -617,7 +615,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `articulos`
 --
 ALTER TABLE `articulos`
-  MODIFY `id_articulo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_articulo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `años`
@@ -629,7 +627,7 @@ ALTER TABLE `años`
 -- AUTO_INCREMENT de la tabla `bot`
 --
 ALTER TABLE `bot`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `carrusel`
@@ -653,7 +651,7 @@ ALTER TABLE `contactos`
 -- AUTO_INCREMENT de la tabla `documentos`
 --
 ALTER TABLE `documentos`
-  MODIFY `id_documento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_documento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `encuestas`
@@ -665,13 +663,13 @@ ALTER TABLE `encuestas`
 -- AUTO_INCREMENT de la tabla `eventos`
 --
 ALTER TABLE `eventos`
-  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_evento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `fracciones`
 --
 ALTER TABLE `fracciones`
-  MODIFY `id_fraccion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_fraccion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `logo`

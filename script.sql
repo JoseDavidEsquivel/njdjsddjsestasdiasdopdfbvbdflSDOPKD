@@ -260,6 +260,7 @@ DO
 CREATE TABLE documentos(
     id_documento INT AUTO_INCREMENT PRIMARY KEY,
     documento VARCHAR(200),
+    ruta VARCHAR(100),
     trimestre ENUM('1','2','3','4'),
     año INT,
     id_fraccion INT,
@@ -267,7 +268,7 @@ CREATE TABLE documentos(
     FOREIGN KEY (id_fraccion) REFERENCES fracciones(id_fraccion) ON DELETE CASCADE
 );
 
-INSERT INTO documentos (documento, trimestre, año, id_fraccion) VALUES
+INSERT INTO documentos (documento, ruta, trimestre, año, id_fraccion) VALUES
 ('a69_f01.xlsx','1',2024,1),
 ('a69_f02.xlsx','1',2024,2),
 ('a69_f45.xlsx','1',2024,3),
